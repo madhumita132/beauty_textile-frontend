@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="12" fill="#fdf8f0"/>
+  <!-- Saree drape (daily wear - simpler, lighter) -->
+  <path d="M70 50 Q100 38 130 50 L132 145 Q100 158 68 145 Z" fill="#cd853f" opacity="0.25"/>
+  <path d="M73 54 Q100 43 127 54 L128 140 Q100 152 72 140 Z" fill="#a0522d" opacity="0.3"/>
+  <!-- Simple border -->
+  <path d="M74 58 Q100 48 126 58" stroke="#805500" stroke-width="2" fill="none"/>
+  <path d="M73 137 Q100 148 127 137" stroke="#805500" stroke-width="2" fill="none"/>
+  <!-- Sun/morning motif -->
+  <circle cx="100" cy="95" r="14" fill="#f0a500" opacity="0.6"/>
+  <line x1="100" y1="72" x2="100" y2="78" stroke="#f0a500" stroke-width="2"/>
+  <line x1="100" y1="112" x2="100" y2="118" stroke="#f0a500" stroke-width="2"/>
+  <line x1="77" y1="95" x2="83" y2="95" stroke="#f0a500" stroke-width="2"/>
+  <line x1="117" y1="95" x2="123" y2="95" stroke="#f0a500" stroke-width="2"/>
+  <text x="100" y="178" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#3e2000">Daily Wear</text>
+</svg>

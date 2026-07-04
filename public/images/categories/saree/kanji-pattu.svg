@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 140">
+  <!-- KanjiPattu Saree - rich silk with gold zari border -->
+  <!-- Main saree drape -->
+  <path d="M20 10 Q50 5 80 10 L85 130 Q50 136 15 130 Z" fill="#6b0080"/>
+  <!-- Gold Zari border (thick) -->
+  <path d="M15 130 Q50 136 85 130 L83 110 Q50 116 17 110 Z" fill="#c88a00"/>
+  <!-- Gold top border -->
+  <rect x="15" y="10" width="70" height="8" rx="2" fill="#c88a00"/>
+  <!-- Traditional temple/Kanjivaram pattern in border -->
+  <rect x="20" y="112" width="8" height="14" rx="1" fill="#805500"/>
+  <rect x="34" y="112" width="8" height="14" rx="1" fill="#805500"/>
+  <rect x="48" y="112" width="8" height="14" rx="1" fill="#805500"/>
+  <rect x="62" y="112" width="8" height="14" rx="1" fill="#805500"/>
+  <rect x="72" y="112" width="8" height="14" rx="1" fill="#805500"/>
+  <!-- Woven silk texture lines on body -->
+  <line x1="20" y1="25" x2="80" y2="25" stroke="#5a0070" stroke-width="1"/>
+  <line x1="20" y1="40" x2="81" y2="41" stroke="#5a0070" stroke-width="1"/>
+  <line x1="19" y1="55" x2="82" y2="57" stroke="#5a0070" stroke-width="1"/>
+  <line x1="18" y1="70" x2="83" y2="73" stroke="#5a0070" stroke-width="1"/>
+  <line x1="17" y1="85" x2="84" y2="88" stroke="#5a0070" stroke-width="1"/>
+  <!-- Pallu (end piece) decoration -->
+  <circle cx="50" cy="65" r="14" fill="none" stroke="#c88a00" stroke-width="2"/>
+  <circle cx="50" cy="65" r="8"  fill="none" stroke="#c88a00" stroke-width="1.5"/>
+  <circle cx="50" cy="65" r="3"  fill="#c88a00"/>
+</svg>

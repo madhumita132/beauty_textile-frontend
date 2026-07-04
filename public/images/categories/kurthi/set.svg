@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="12" fill="#fef6f0"/>
+  <!-- Kurti set - top + palazzo -->
+  <!-- Top part -->
+  <path d="M74 42 L100 36 L126 42 L130 50 L120 54 L118 105 L82 105 L80 54 L70 50 Z" fill="#805500" opacity="0.3"/>
+  <!-- Palazzo bottom -->
+  <path d="M80 102 L75 155 L95 155 L100 120 L105 155 L125 155 L120 102 Z" fill="#6b4700" opacity="0.3"/>
+  <!-- Neck detail -->
+  <ellipse cx="100" cy="53" rx="16" ry="7" fill="none" stroke="#d4a000" stroke-width="2"/>
+  <!-- Block print on top -->
+  <rect x="88" y="70" width="24" height="20" rx="3" fill="#d4a000" opacity="0.35"/>
+  <text x="100" y="178" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#3e2000">Kurti Sets</text>
+</svg>

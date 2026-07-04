@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="12" fill="#fff0f8"/>
+  <!-- Kids outfit - colorful and cute -->
+  <!-- T-shirt top -->
+  <path d="M72 55 L86 48 L100 54 L114 48 L128 55 L132 68 L118 70 L116 125 L84 125 L82 70 L68 68 Z" fill="#e040fb" opacity="0.25"/>
+  <!-- Shorts/skirt -->
+  <path d="M82 122 L78 158 L122 158 L118 122 Z" fill="#7c4dff" opacity="0.25"/>
+  <!-- Star decoration -->
+  <polygon points="100,72 102,78 108,78 103,82 105,88 100,84 95,88 97,82 92,78 98,78" fill="#ffd600" opacity="0.8"/>
+  <!-- Collar -->
+  <path d="M91 54 Q100 48 109 54" stroke="#e040fb" stroke-width="2" fill="none"/>
+  <text x="100" y="178" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#3e2000">Kids</text>
+</svg>

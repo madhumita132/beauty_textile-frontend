@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="12" fill="#fdf5e0"/>
+  <!-- Kurta/sherwani shape -->
+  <path d="M70 42 L100 36 L130 42 L134 52 L124 56 L122 158 L78 158 L76 56 L66 52 Z" fill="#5c3317" opacity="0.2"/>
+  <path d="M72 45 L100 40 L128 45 L131 53 L122 57 L119 154 L81 154 L78 57 L69 53 Z" fill="#7b4c1e" opacity="0.35"/>
+  <!-- Mandarin collar -->
+  <path d="M89 54 Q100 48 111 54 L110 61 Q100 57 90 61 Z" fill="#7b4c1e" opacity="0.5"/>
+  <!-- Embroidery on chest -->
+  <path d="M88 70 Q100 63 112 70" stroke="#d4a000" stroke-width="2" fill="none"/>
+  <circle cx="100" cy="74" r="3" fill="#d4a000" opacity="0.7"/>
+  <circle cx="91" cy="78" r="2" fill="#d4a000" opacity="0.5"/>
+  <circle cx="109" cy="78" r="2" fill="#d4a000" opacity="0.5"/>
+  <!-- Side slits -->
+  <line x1="78" y1="125" x2="78" y2="154" stroke="#5c3317" stroke-width="2" opacity="0.4"/>
+  <line x1="122" y1="125" x2="122" y2="154" stroke="#5c3317" stroke-width="2" opacity="0.4"/>
+  <text x="100" y="178" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#3e2000">Ethnic Wear</text>
+</svg>

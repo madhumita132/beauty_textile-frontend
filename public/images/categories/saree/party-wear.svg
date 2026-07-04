@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="12" fill="#fff3f0"/>
+  <!-- Party wear saree - richer color, sparkles -->
+  <path d="M58 58 Q100 42 142 58 L146 146 Q100 165 54 146 Z" fill="#8b0000" opacity="0.2"/>
+  <path d="M63 63 Q100 49 137 63 L140 140 Q100 158 60 140 Z" fill="#c0392b" opacity="0.3"/>
+  <!-- Sparkles -->
+  <polygon points="100,58 102,64 108,64 103,68 105,74 100,70 95,74 97,68 92,64 98,64" fill="#ffd700"/>
+  <polygon points="75,90 76,93 79,93 77,95 78,98 75,96 72,98 73,95 71,93 74,93" fill="#ffd700" opacity="0.8"/>
+  <polygon points="125,95 126,98 129,98 127,100 128,103 125,101 122,103 123,100 121,98 124,98" fill="#ffd700" opacity="0.8"/>
+  <polygon points="85,120 86,122 88,122 87,124 87.5,126 85,125 82.5,126 83,124 82,122 84,122" fill="#ffd700" opacity="0.7"/>
+  <!-- Gold border -->
+  <path d="M65 65 Q100 52 135 65" stroke="#ffd700" stroke-width="2.5" fill="none"/>
+  <path d="M62 138 Q100 153 138 138" stroke="#ffd700" stroke-width="2.5" fill="none"/>
+  <text x="100" y="178" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#3e2000">Party Wear</text>
+</svg>

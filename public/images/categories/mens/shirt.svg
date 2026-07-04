@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="12" fill="#f0f8ff"/>
+  <!-- Shirt shape -->
+  <path d="M68 55 L85 45 L100 52 L115 45 L132 55 L136 72 L122 76 L120 155 L80 155 L78 76 L64 72 Z" fill="#1a3a6b" opacity="0.2"/>
+  <path d="M70 57 L85 48 L100 54 L115 48 L130 57 L133 71 L120 74 L118 150 L82 150 L80 74 L67 71 Z" fill="#2c5282" opacity="0.3"/>
+  <!-- Collar -->
+  <path d="M88 54 L100 65 L112 54" stroke="#1a3a6b" stroke-width="2" fill="none"/>
+  <!-- Button placket -->
+  <line x1="100" y1="65" x2="100" y2="145" stroke="#1a3a6b" stroke-width="1.5" opacity="0.5"/>
+  <circle cx="100" cy="78" r="2.5" fill="#1a3a6b" opacity="0.5"/>
+  <circle cx="100" cy="92" r="2.5" fill="#1a3a6b" opacity="0.5"/>
+  <circle cx="100" cy="106" r="2.5" fill="#1a3a6b" opacity="0.5"/>
+  <circle cx="100" cy="120" r="2.5" fill="#1a3a6b" opacity="0.5"/>
+  <!-- Chest pocket -->
+  <rect x="82" y="78" width="16" height="13" rx="2" stroke="#1a3a6b" stroke-width="1.5" fill="none" opacity="0.4"/>
+  <text x="100" y="178" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#3e2000">Shirts</text>
+</svg>
