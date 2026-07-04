@@ -28,6 +28,18 @@ export const routes: Routes = [
     path: 'order-confirmation/:id',
     loadComponent: () => import('./components/customer/order-confirmation/order-confirmation.component').then(m => m.OrderConfirmationComponent)
   },
+  {
+    path: 'about-us',
+    loadComponent: () => import('./components/customer/pages/about-us.component').then(m => m.AboutUsComponent)
+  },
+  {
+    path: 'contact-us',
+    loadComponent: () => import('./components/customer/pages/contact-us.component').then(m => m.ContactUsComponent)
+  },
+  {
+    path: 'policy/:type',
+    loadComponent: () => import('./components/customer/pages/policy-page.component').then(m => m.PolicyPageComponent)
+  },
   // ---- Admin routes ----
   {
     path: 'admin/login',

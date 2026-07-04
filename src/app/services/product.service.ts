@@ -4,6 +4,15 @@ import { Observable, shareReplay, tap } from 'rxjs';
 import { Product, ProductVariant } from '../models/models';
 import { environment } from '../../environments/environment';
 
+interface PagedProductResponse {
+  content: Product[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProductService {
   private base = `${environment.apiUrl}/products`;
@@ -24,6 +33,13 @@ export class ProductService {
       );
     }
     return this.cache.get(key)!;
+  }
+
+  getPaged(page = 0, size = 12, category?: string, search?: string): Observable<PagedProductResponse> {
+    const params: Record<string, string | number> = { page, size };
+    if (category) params['category'] = category;
+    if (search) params['search'] = search;
+    return this.http.get<PagedProductResponse>(`${this.base}/paged`, { params });
   }
 
   /** Call after create/update/delete to force fresh fetch */

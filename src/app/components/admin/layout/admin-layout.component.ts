@@ -166,7 +166,7 @@ export class AdminLayoutComponent {
   constructor(private auth: AuthService, private router: Router) {}
   logout(): void {
     this.auth.logout().subscribe(() => {
-      this.router.navigate(['/admin/login']);
+      this.router.navigate(['/products']);
     });
   }
 }

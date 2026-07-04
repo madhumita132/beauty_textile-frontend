@@ -21,6 +21,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 /** AI description templates per category */
 function aiGenerateDescription(name: string, category: string): string {
@@ -90,19 +91,102 @@ function aiGenerateDescription(name: string, category: string): string {
     MatFormFieldModule, MatInputModule, MatSelectModule,
     MatDialogModule, MatCardModule, MatChipsModule,
     MatTooltipModule, MatProgressSpinnerModule,
-    MatDividerModule, MatBadgeModule, MatSnackBarModule
+    MatDividerModule, MatBadgeModule, MatSnackBarModule, MatSlideToggleModule
   ],
   template: `
     <!-- Page header -->
     <div class="pm-header">
       <div>
-        <h1 class="page-title">Products</h1>
-        <p class="page-sub">Manage your inventory</p>
+        <h1 class="page-title">{{ tab === 'products' ? 'Products' : 'Categories' }}</h1>
+        <p class="page-sub">{{ tab === 'products' ? 'Manage your inventory' : 'Choose what customers are allowed to see & buy' }}</p>
       </div>
-      <button mat-raised-button color="primary" (click)="openAdd()" class="add-btn">
-        <mat-icon>add</mat-icon> Add Product
-      </button>
+      @if (tab === 'products') {
+        <button mat-raised-button color="primary" (click)="openAdd()" class="add-btn">
+          <mat-icon>add</mat-icon> Add Product
+        </button>
+      }
     </div>
+
+    <!-- Tab bar -->
+    <div class="pm-tabs">
+      <button [class.active]="tab==='products'"   (click)="tab='products'">Products</button>
+      <button [class.active]="tab==='categories'" (click)="tab='categories'; loadCategoryTree()">Categories</button>
+    </div>
+
+    <!-- ═══ CATEGORIES TAB ═══ -->
+    @if (tab === 'categories') {
+      <mat-card class="table-card mat-elevation-z2 categories-card">
+        <div class="add-root-row">
+          <mat-form-field appearance="outline" class="search-field">
+            <mat-label>New top-level category</mat-label>
+            <mat-icon matPrefix>category</mat-icon>
+            <input matInput [(ngModel)]="newRootName" placeholder="e.g. Lehengas" (keyup.enter)="addRootCategory()" />
+          </mat-form-field>
+          <button mat-raised-button color="primary" [disabled]="!newRootName.trim() || savingCategory" (click)="addRootCategory()">
+            <mat-icon>add</mat-icon> Add Category
+          </button>
+        </div>
+
+        @if (loadingCategories) {
+          <div style="display:flex;justify-content:center;padding:40px">
+            <mat-spinner></mat-spinner>
+          </div>
+        } @else if (categoryTree.length === 0) {
+          <div class="empty-state">
+            <mat-icon>category</mat-icon>
+            <p>No categories yet</p>
+          </div>
+        } @else {
+          <div class="category-tree">
+            @for (root of categoryTree; track root.id) {
+              <div class="cat-node root-node" [class.inactive-node]="!root.active">
+                <div class="cat-node-row">
+                  <span class="cat-node-name">{{ root.name }}</span>
+                  <span class="cat-node-actions">
+                    <mat-slide-toggle [checked]="!!root.active" (change)="toggleActive(root)" matTooltip="Visible to customers"></mat-slide-toggle>
+                    <button mat-icon-button (click)="showSubForm(root)" matTooltip="Add subcategory">
+                      <mat-icon>create_new_folder</mat-icon>
+                    </button>
+                    <button mat-icon-button color="warn" (click)="deleteCategoryNode(root)" matTooltip="Delete">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </span>
+                </div>
+
+                @if (subFormParentId === root.id) {
+                  <div class="add-sub-row">
+                    <input class="form-control" style="flex:1" [(ngModel)]="newSubName" placeholder="Subcategory name" (keyup.enter)="addSubcategory(root)" />
+                    <button class="btn btn-primary btn-sm" [disabled]="!newSubName.trim() || savingCategory" (click)="addSubcategory(root)">Add</button>
+                    <button class="btn btn-outline btn-sm" (click)="subFormParentId = null">Cancel</button>
+                  </div>
+                }
+
+                @if (root.children && root.children.length > 0) {
+                  <div class="cat-children">
+                    @for (child of root.children; track child.id) {
+                      <div class="cat-node child-node" [class.inactive-node]="!child.active">
+                        <div class="cat-node-row">
+                          <span class="cat-node-name">{{ child.name }}</span>
+                          <span class="cat-node-actions">
+                            <mat-slide-toggle [checked]="!!child.active" (change)="toggleActive(child)" matTooltip="Visible to customers"></mat-slide-toggle>
+                            <button mat-icon-button color="warn" (click)="deleteCategoryNode(child)" matTooltip="Delete">
+                              <mat-icon>delete</mat-icon>
+                            </button>
+                          </span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </mat-card>
+    }
+
+    <!-- ═══ PRODUCTS TAB ═══ -->
+    @if (tab === 'products') {
 
     <!-- Product form modal -->
     @if (showModal) {
@@ -153,6 +237,27 @@ function aiGenerateDescription(name: string, category: string): string {
                   }
                 </mat-select>
               </mat-form-field>
+
+              <div class="category-image-editor">
+                <div class="image-label">
+                  <mat-icon style="color:#805500">image</mat-icon>
+                  <span>Category Image</span>
+                </div>
+                @if (selectedCategory?.imagePath) {
+                  <img class="category-image-preview" [src]="selectedCategory?.imagePath" [alt]="selectedCategory?.name || 'Category'" />
+                }
+                <label class="upload-area" [class.uploading]="uploadingCategoryImage">
+                  <input type="file" accept="image/*" (change)="onCategoryImageChange($event)" style="display:none" />
+                  @if (uploadingCategoryImage) {
+                    <mat-spinner diameter="24"></mat-spinner>
+                    <span>Uploading...</span>
+                  } @else {
+                    <mat-icon style="font-size:28px;width:28px;height:28px;color:#805500">cloud_upload</mat-icon>
+                    <span>{{ selectedCategory?.imagePath ? 'Change category image' : 'Upload category image' }}</span>
+                    <small>Admins can update the category card image</small>
+                  }
+                </label>
+              </div>
 
               <mat-form-field appearance="outline" style="flex:1">
                 <mat-label>Price (₹) *</mat-label>
@@ -382,6 +487,16 @@ function aiGenerateDescription(name: string, category: string): string {
             </button>
           }
         </mat-form-field>
+        <mat-form-field appearance="outline" class="category-filter-field">
+          <mat-label>Filter by category</mat-label>
+          <mat-icon matPrefix>category</mat-icon>
+          <mat-select [(ngModel)]="categoryFilter" (ngModelChange)="onSearch()">
+            <mat-option value="">All Categories</mat-option>
+            @for (c of allCategories; track c.id) {
+              <mat-option [value]="c.name">{{ c.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
         <div class="stat-chips">
           <span class="stat-chip total">Total: {{ products.length }}</span>
           <span class="stat-chip low" *ngIf="lowStockCount > 0">Low Stock: {{ lowStockCount }}</span>
@@ -472,6 +587,8 @@ function aiGenerateDescription(name: string, category: string): string {
         </div>
       </mat-card>
     }
+
+    } <!-- /products tab -->
   `,
   styles: [`
     :host { display: block; }
@@ -480,6 +597,11 @@ function aiGenerateDescription(name: string, category: string): string {
     .page-sub { font-size: .85rem; color: #8a7560; margin: 4px 0 0; }
     .add-btn { background: #805500 !important; color: white !important; height: 44px; }
 
+    /* Tabs */
+    .pm-tabs { display:flex; gap:8px; margin-bottom:24px; }
+    .pm-tabs button { padding:8px 20px; border-radius:20px; border:1px solid #ddd; background:#fff; font-size:.88rem; cursor:pointer; }
+    .pm-tabs button.active { background:#805500; color:#fff; border-color:#805500; }
+
     /* Modal */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
     .modal-card { width: 620px; max-width: 100%; max-height: 92vh; overflow-y: auto; position: relative; }
@@ -487,6 +609,8 @@ function aiGenerateDescription(name: string, category: string): string {
     .full-width { width: 100%; }
     .two-col { display: flex; gap: 16px; }
     @media (max-width: 500px) { .two-col { flex-direction: column; } }
+    .category-image-editor { flex:1; border: 1px dashed #c9b090; border-radius: 12px; padding: 16px; min-width: 0; }
+    .category-image-preview { width: 100%; max-width: 170px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; border: 2px solid #e0c898; margin-bottom: 10px; display: block; }
     .desc-row { display: flex; gap: 12px; align-items: flex-start; }
     .ai-btn { min-width: 130px; margin-top: 4px; border-color: #805500 !important; color: #805500 !important; white-space: nowrap; }
     .ai-btn mat-icon { font-size: 18px; margin-right: 4px; }
@@ -511,6 +635,7 @@ function aiGenerateDescription(name: string, category: string): string {
     /* Controls */
     .controls-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
     .search-field { min-width: 280px; }
+    .category-filter-field { min-width: 220px; }
     .stat-chips { display: flex; gap: 8px; flex-wrap: wrap; }
     .stat-chip { padding: 4px 12px; border-radius: 20px; font-size: .8rem; font-weight: 600; }
     .stat-chip.total { background: #e8d5b0; color: #3e2000; }
@@ -554,12 +679,34 @@ function aiGenerateDescription(name: string, category: string): string {
     .size-label { width:44px; font-weight:700; font-size:.9rem; color:#2c1a00; }
     .size-stock-input { width:80px; padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:.9rem; font-family:inherit; text-align:center; }
     .size-stock-input:focus { outline:none; border-color:#805500; }
+
+    /* Categories tab */
+    .categories-card { padding: 24px; }
+    .add-root-row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; }
+    .category-tree { display: flex; flex-direction: column; gap: 10px; }
+    .cat-node { border: 1px solid #ede4d4; border-radius: 10px; padding: 12px 16px; background: #fdf9f5; }
+    .cat-node.inactive-node { opacity: .55; background: #f5f5f5; }
+    .cat-node-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .cat-node-name { font-weight: 700; color: #2c1a00; font-size: .95rem; }
+    .cat-node-actions { display: flex; align-items: center; gap: 4px; }
+    .cat-children { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 0 24px; }
+    .child-node { background: #fff; }
+    .child-node .cat-node-name { font-weight: 600; font-size: .88rem; }
+    .add-sub-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
   `]
 })
 export class ProductManagementComponent implements OnInit {
   products: Product[] = [];
   filtered: Product[] = [];
   allCategories: Category[] = [];
+  categoryFilter = '';
+  tab: 'products' | 'categories' = 'products';
+  categoryTree: Category[] = [];
+  loadingCategories = false;
+  savingCategory = false;
+  newRootName = '';
+  newSubName = '';
+  subFormParentId: number | null = null;
   loading = true;
   showModal = false;
   editing: Product | null = null;
@@ -567,6 +714,7 @@ export class ProductManagementComponent implements OnInit {
   uploadingImage = false;
   searchTerm = '';
   uploadingExtraImage = false;
+  uploadingCategoryImage = false;
   variants: ProductVariant[] = [];
   loadingVariants = false;
   showVariantForm = false;
@@ -583,6 +731,10 @@ export class ProductManagementComponent implements OnInit {
   displayedColumns = ['image', 'barcode', 'name', 'category', 'price', 'stock', 'actions'];
 
   form: Partial<Product> & { description?: string } = {};
+
+  get selectedCategory(): Category | null {
+    return this.allCategories.find(c => c.name === this.form.category) || null;
+  }
 
   get lowStockCount(): number { return this.products.filter(p => p.stock < 5).length; }
 
@@ -602,7 +754,7 @@ export class ProductManagementComponent implements OnInit {
     this.loading = true;
     this.prodSvc.getAll().subscribe(p => {
       this.products = p;
-      this.filtered = p;
+      this.onSearch();
       this.loading = false;
       this.cdr.markForCheck();
     });
@@ -610,8 +762,96 @@ export class ProductManagementComponent implements OnInit {
 
   onSearch(): void {
     const q = this.searchTerm.toLowerCase();
-    this.filtered = q ? this.products.filter(p =>
+    let result = q ? this.products.filter(p =>
       p.name.toLowerCase().includes(q) || p.barcode.toLowerCase().includes(q)) : this.products;
+    if (this.categoryFilter) {
+      result = result.filter(p => p.category === this.categoryFilter);
+    }
+    this.filtered = result;
+  }
+
+  // ── Category management (Categories tab) ──────────────────────────────────
+
+  loadCategoryTree(): void {
+    this.loadingCategories = true;
+    this.catSvc.getTree().subscribe({
+      next: c => { this.categoryTree = c; this.loadingCategories = false; this.cdr.markForCheck(); },
+      error: () => { this.loadingCategories = false; this.toast.error('Failed to load categories'); this.cdr.markForCheck(); }
+    });
+  }
+
+  addRootCategory(): void {
+    const name = this.newRootName.trim();
+    if (!name) return;
+    this.savingCategory = true;
+    this.catSvc.create(name, null).subscribe({
+      next: () => {
+        this.newRootName = '';
+        this.savingCategory = false;
+        this.loadCategoryTree();
+        this.catSvc.getAll().subscribe(c => { this.allCategories = c; this.cdr.markForCheck(); });
+        this.toast.success(`Category "${name}" added`);
+      },
+      error: err => {
+        this.savingCategory = false;
+        this.cdr.markForCheck();
+        this.toast.error(err.error?.message || 'Failed to add category');
+      }
+    });
+  }
+
+  showSubForm(parent: Category): void {
+    this.subFormParentId = this.subFormParentId === parent.id ? null : parent.id;
+    this.newSubName = '';
+  }
+
+  addSubcategory(parent: Category): void {
+    const name = this.newSubName.trim();
+    if (!name) return;
+    this.savingCategory = true;
+    this.catSvc.create(name, parent.id).subscribe({
+      next: () => {
+        this.newSubName = '';
+        this.subFormParentId = null;
+        this.savingCategory = false;
+        this.loadCategoryTree();
+        this.catSvc.getAll().subscribe(c => { this.allCategories = c; this.cdr.markForCheck(); });
+        this.toast.success(`Subcategory "${name}" added`);
+      },
+      error: err => {
+        this.savingCategory = false;
+        this.cdr.markForCheck();
+        this.toast.error(err.error?.message || 'Failed to add subcategory');
+      }
+    });
+  }
+
+  toggleActive(cat: Category): void {
+    const nextActive = !cat.active;
+    this.catSvc.setActive(cat.id, nextActive).subscribe({
+      next: () => {
+        cat.active = nextActive;
+        this.cdr.markForCheck();
+        this.toast.success(nextActive ? `"${cat.name}" is now visible to customers` : `"${cat.name}" is now hidden from customers`);
+      },
+      error: () => this.toast.error('Failed to update category')
+    });
+  }
+
+  deleteCategoryNode(cat: Category): void {
+    const childCount = cat.children?.length || 0;
+    const warning = childCount > 0
+      ? `Delete "${cat.name}" and its ${childCount} subcategor${childCount === 1 ? 'y' : 'ies'}?`
+      : `Delete "${cat.name}"?`;
+    if (!confirm(warning)) return;
+    this.catSvc.delete(cat.id).subscribe({
+      next: () => {
+        this.loadCategoryTree();
+        this.catSvc.getAll().subscribe(c => { this.allCategories = c; this.cdr.markForCheck(); });
+        this.toast.success(`"${cat.name}" deleted`);
+      },
+      error: () => this.toast.error('Failed to delete category')
+    });
   }
 
   openAdd(): void {
@@ -646,6 +886,27 @@ export class ProductManagementComponent implements OnInit {
     this.prodSvc.uploadImage(file).subscribe({
       next: res => { this.form.imageUrl = res.imageUrl; this.uploadingImage = false; this.toast.success('Image uploaded'); this.cdr.markForCheck(); },
       error: () => { this.uploadingImage = false; this.toast.error('Image upload failed'); this.cdr.markForCheck(); }
+    });
+  }
+
+  onCategoryImageChange(event: Event): void {
+    const category = this.selectedCategory;
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!category || !file) return;
+    if (file.size > 5 * 1024 * 1024) { this.toast.error('Image must be under 5 MB'); return; }
+    this.uploadingCategoryImage = true;
+    this.catSvc.uploadImage(category.id, file).subscribe({
+      next: res => {
+        category.imagePath = res.imagePath;
+        this.uploadingCategoryImage = false;
+        this.toast.success('Category image updated');
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.uploadingCategoryImage = false;
+        this.toast.error('Category image upload failed');
+        this.cdr.markForCheck();
+      }
     });
   }
 

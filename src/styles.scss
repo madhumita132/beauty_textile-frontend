@@ -112,8 +112,33 @@ tr:hover td { background: #f8f9fa; }
 
 @media print {
   body * { visibility: hidden; }
-  .print-receipt { display: block !important; visibility: visible; position: absolute; left: 0; top: 0; width: 58mm; font-size: 11px; font-family: 'Courier New', monospace; color: #000; }
+  .print-receipt {
+    display: block !important;
+    visibility: visible;
+    position: fixed;
+    left: 0; top: 0;
+    width: 58mm;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    color: #000;
+    background: #fff;
+    z-index: 999999;
+  }
   .print-receipt * { visibility: visible; }
+  #barcode-print-area, #barcode-print-area * { visibility: visible; }
+  #barcode-print-area {
+    display: block !important;
+    position: fixed; left: 0; top: 0;
+    width: 45mm; min-height: auto; margin: 0; padding: 1.5mm;
+    border: 1px solid #000; border-radius: 0; box-shadow: none;
+    background: #fff; z-index: 999999;
+  }
+  #barcode-print-area .sticker-brand { font-size: 8px; }
+  #barcode-print-area .sticker-category { font-size: 6.5px; }
+  #barcode-print-area .sticker-code { width: 100px; height: 24px; }
+  #barcode-print-area .sticker-barcode { font-size: 7px; }
+  #barcode-print-area .sticker-sku { font-size: 6px; }
+  #barcode-print-area .sticker-price { font-size: 11px; }
   .no-print { display: none !important; }
   @page { margin: 4mm; size: 58mm auto; }
 }

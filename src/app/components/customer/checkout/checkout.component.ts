@@ -9,8 +9,6 @@ import { ToastService } from '../../../services/toast.service';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { environment } from '../../../../environments/environment';
 
-declare const Razorpay: any;
-
 @Component({
   selector: 'app-checkout',
   standalone: true,
@@ -63,6 +61,33 @@ declare const Razorpay: any;
         </div>
       }
     </div>
+
+    @if (showUpiModal) {
+      <div class="upi-overlay" (click)="closeUpiModal()">
+        <div class="upi-modal" (click)="$event.stopPropagation()">
+          <button class="upi-close" type="button" (click)="closeUpiModal()">×</button>
+          <h2 class="upi-title">Scan & Pay</h2>
+          <p class="upi-subtitle">Use any UPI app to complete payment</p>
+
+          <div class="upi-qr-wrap">
+            <a [href]="upiPaymentLink" class="upi-open-link" title="Open UPI app">
+              <img [src]="upiQrUrl" alt="UPI QR" class="upi-qr" />
+            </a>
+          </div>
+
+          <div class="upi-amount">Amount: ₹{{ upiAmount | number:'1.0-2' }}</div>
+          <div class="upi-id">UPI ID: {{ upiId }}</div>
+
+          <div class="upi-actions">
+            <a class="btn btn-outline" [href]="upiPaymentLink">Open UPI App</a>
+            <button class="btn btn-outline" type="button" (click)="closeUpiModal()" [disabled]="confirmingUpi">Cancel</button>
+            <button class="btn btn-primary" type="button" (click)="confirmUpiPaid()" [disabled]="confirmingUpi">
+              {{ confirmingUpi ? 'Verifying...' : 'I Have Paid' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   `,
   styles: [`
     .page-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 24px; }
@@ -71,6 +96,56 @@ declare const Razorpay: any;
     .sum-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: .9rem; }
     .sum-total { display: flex; justify-content: space-between; font-weight: 700; font-size: 1rem; border-top: 1px solid #ecf0f1; padding-top: 12px; margin-top: 12px; }
     .empty-state { text-align: center; color: #7f8c8d; padding: 60px; font-size: 1.1rem; }
+    .upi-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(9, 16, 28, .65);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 1200;
+    }
+    .upi-modal {
+      width: 100%;
+      max-width: 440px;
+      background: #f8f8f8;
+      border-radius: 22px;
+      padding: 22px 22px 20px;
+      position: relative;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, .35);
+      text-align: center;
+    }
+    .upi-close {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      border: none;
+      background: transparent;
+      font-size: 28px;
+      color: #666;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .upi-title { margin: 0; font-size: 1.55rem; color: #1c2745; }
+    .upi-subtitle { margin: 8px 0 16px; color: #5f6d8b; font-size: .93rem; }
+    .upi-qr-wrap {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 12px;
+      border: 1px solid #ebedf1;
+    }
+    .upi-qr { width: 100%; max-width: 360px; aspect-ratio: 1 / 1; object-fit: contain; border-radius: 10px; }
+    .upi-open-link { display: inline-block; }
+    .upi-amount { margin-top: 14px; font-size: 1.05rem; font-weight: 700; color: #111827; }
+    .upi-id { margin-top: 4px; font-size: .95rem; color: #4b5563; }
+    .upi-actions {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
     @media (max-width: 600px) { .checkout-summary { width: 100%; } }
   `]
 })
@@ -79,6 +154,14 @@ export class CheckoutComponent {
   phone = '';
   address = '';
   placing = false;
+  showUpiModal = false;
+  confirmingUpi = false;
+  upiAmount = 0;
+  currentOrderId: number | null = null;
+  currentPaymentRef = '';
+
+  private readonly upiPayeeName = 'Beauty Textile';
+  readonly upiId = 'mithramadhu13-1@okhdfcbank';
 
   constructor(
     public cart: CartService,
@@ -110,29 +193,16 @@ export class CheckoutComponent {
     // Step 1: create the order (stock reserved)
     this.orderSvc.create(orderReq).subscribe({
       next: order => {
-        // Step 2: create Razorpay payment order
+        // Step 2: create payment reference on backend
         this.http.post<any>(`${environment.apiUrl}/payment/create`, { amount: order.totalAmount, orderId: order.id })
           .subscribe({
             next: payment => {
-              if (payment.mock) {
-                // Mock mode: skip Razorpay popup, verify directly
-                this.http.post(`${environment.apiUrl}/payment/verify`, {
-                  orderId: order.id,
-                  razorpayOrderId: payment.razorpayOrderId,
-                  razorpayPaymentId: 'mock_pay_' + Date.now(),
-                  razorpaySignature: 'mock_sig'
-                }).subscribe({
-                  next: () => {
-                    this.placing = false;
-                    this.cart.clear();
-                    this.cdr.markForCheck();
-                    this.router.navigate(['/order-confirmation', order.id]);
-                  },
-                  error: () => { this.placing = false; this.toast.error('Payment verification failed'); this.cdr.markForCheck(); }
-                });
-              } else {
-                this.openRazorpay(payment, order.id);
-              }
+              this.currentOrderId = order.id;
+              this.currentPaymentRef = payment?.razorpayOrderId || ('upi_ref_' + Date.now());
+              this.upiAmount = Number(order.totalAmount || 0);
+              this.showUpiModal = true;
+              this.placing = false;
+              this.cdr.markForCheck();
             },
             error: () => { this.placing = false; this.toast.error('Payment initialization failed'); this.cdr.markForCheck(); }
           });
@@ -145,34 +215,53 @@ export class CheckoutComponent {
     });
   }
 
-  private openRazorpay(payment: any, orderId: number): void {
-    const options = {
-      key: payment.keyId,
-      amount: payment.amount * 100,
-      currency: payment.currency,
-      name: 'Beauty Textile',
-      description: 'Order Payment',
-      order_id: payment.razorpayOrderId,
-      handler: (response: any) => {
-        this.http.post(`${environment.apiUrl}/payment/verify`, {
-          orderId,
-          razorpayOrderId: response.razorpay_order_id,
-          razorpayPaymentId: response.razorpay_payment_id,
-          razorpaySignature: response.razorpay_signature
-        }).subscribe({
-          next: () => {
-            this.placing = false;
-            this.cart.clear();
-            this.router.navigate(['/order-confirmation', orderId]);
-          },
-          error: () => { this.placing = false; this.toast.error('Payment verification failed'); }
-        });
+  closeUpiModal(): void {
+    if (this.confirmingUpi) return;
+    this.showUpiModal = false;
+    this.cdr.markForCheck();
+  }
+
+  confirmUpiPaid(): void {
+    if (!this.currentOrderId || this.confirmingUpi) {
+      return;
+    }
+
+    this.confirmingUpi = true;
+    this.http.post(`${environment.apiUrl}/payment/verify`, {
+      orderId: this.currentOrderId,
+      razorpayOrderId: this.currentPaymentRef,
+      razorpayPaymentId: 'upi_pay_' + Date.now(),
+      razorpaySignature: 'manual_upi_confirmed'
+    }).subscribe({
+      next: () => {
+        const id = this.currentOrderId as number;
+        this.confirmingUpi = false;
+        this.showUpiModal = false;
+        this.cart.clear();
+        this.cdr.markForCheck();
+        this.router.navigate(['/order-confirmation', id]);
       },
-      prefill: { name: this.name, contact: this.phone },
-      theme: { color: '#c0392b' },
-      modal: { ondismiss: () => { this.placing = false; } }
-    };
-    const rzp = new Razorpay(options);
-    rzp.open();
+      error: () => {
+        this.confirmingUpi = false;
+        this.toast.error('Payment verification failed. Please try again.');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  get upiQrUrl(): string {
+    const upiLink = this.upiPaymentLink;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=420x420&margin=8&data=${encodeURIComponent(upiLink)}`;
+  }
+
+  get upiPaymentLink(): string {
+    const params = new URLSearchParams({
+      pa: this.upiId,
+      pn: this.upiPayeeName,
+      am: this.upiAmount.toFixed(2),
+      cu: 'INR',
+      tn: `Beauty Textile Order ${this.currentOrderId || ''}`.trim()
+    });
+    return `upi://pay?${params.toString()}`;
   }
 }

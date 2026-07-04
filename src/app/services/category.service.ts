@@ -10,6 +10,7 @@ export class CategoryService {
 
   private _all$: Observable<Category[]> | null = null;
   private _tree$: Observable<Category[]> | null = null;
+  private _activeTree$: Observable<Category[]> | null = null;
 
   constructor(private http: HttpClient) {}
 
@@ -27,7 +28,15 @@ export class CategoryService {
     return this._tree$;
   }
 
-  clearCache(): void { this._all$ = null; this._tree$ = null; }
+  /** Customer-facing tree — only categories/subcategories the admin has marked active. */
+  getActiveTree(): Observable<Category[]> {
+    if (!this._activeTree$) {
+      this._activeTree$ = this.http.get<Category[]>(`${this.base}/tree`, { params: { activeOnly: 'true' } }).pipe(shareReplay(1));
+    }
+    return this._activeTree$;
+  }
+
+  clearCache(): void { this._all$ = null; this._tree$ = null; this._activeTree$ = null; }
 
   create(name: string, parentId?: number | null): Observable<Category> {
     return this.http.post<Category>(this.base, { name, parentId: parentId ?? null })
@@ -36,6 +45,18 @@ export class CategoryService {
 
   delete(id: number): Observable<unknown> {
     return this.http.delete(`${this.base}/${id}`)
+      .pipe(tap(() => this.clearCache()));
+  }
+
+  setActive(id: number, active: boolean): Observable<Category> {
+    return this.http.patch<Category>(`${this.base}/${id}/active`, { active })
+      .pipe(tap(() => this.clearCache()));
+  }
+
+  uploadImage(id: number, file: File): Observable<{ imagePath: string }> {
+    const fd = new FormData();
+    fd.append('file', file);
+    return this.http.post<{ imagePath: string }>(`${this.base}/${id}/image`, fd)
       .pipe(tap(() => this.clearCache()));
   }
 }

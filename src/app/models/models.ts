@@ -3,7 +3,17 @@ export interface Category {
   name: string;
   parentId: number | null;
   imagePath: string | null;
+  active?: boolean;
   children?: Category[];
+}
+
+export interface HeroSlide {
+  id: number;
+  kicker: string | null;
+  title: string;
+  text: string | null;
+  imagePath: string | null;
+  sortOrder: number;
 }
 
 export interface Product {
@@ -374,6 +384,7 @@ export interface Review {
   mobileNumber: string;
   rating: number;          // 1–5
   reviewComment: string;
+  reviewImageUrl?: string | null;
   status: string;          // PENDING | APPROVED | REJECTED
   adminReply: string | null;
   createdAt: string;
@@ -396,4 +407,5 @@ export interface ReviewRequest {
   mobileNumber?: string;
   rating: number;
   reviewComment: string;
+  reviewImageUrl?: string | null;
 }

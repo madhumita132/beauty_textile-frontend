@@ -179,7 +179,7 @@ interface BillLine {
         <div class="receipt-divider">--------------------------------</div>
         <div>Bill #{{ savedBill.id }}</div>
         <div>Date: {{ savedBill.createdAt | date:'dd/MM/yyyy HH:mm' }}</div>
-        @if (savedBill.customerName) { <div>Customer: {{ savedBill.customerName }}</div> }
+        <div>Customer: {{ savedBill.customerName || 'Walk-in Customer' }}</div>
         @if (savedBill.phone)         { <div>Phone: {{ savedBill.phone }}</div> }
         <div class="receipt-divider">--------------------------------</div>
         @for (item of savedBill.items; track item.productId) {

@@ -176,6 +176,15 @@ import { Product, ProductVariant, ProductVariantSize, Review, ReviewSummary } fr
                 <input [(ngModel)]="reviewForm.mobileNumber" class="form-ctrl"
                   placeholder="Mobile Number (Optional)" maxlength="15" />
               </div>
+              <div class="review-image-row">
+                <label class="review-image-upload">
+                  <input type="file" accept="image/*" (change)="onReviewImageChange($event)" hidden />
+                  <span>{{ reviewImageUploading ? 'Uploading...' : 'Add Photo (optional)' }}</span>
+                </label>
+                @if (reviewForm.reviewImageUrl) {
+                  <a [href]="reviewForm.reviewImageUrl" target="_blank" class="review-image-link">View selected image</a>
+                }
+              </div>
               <textarea [(ngModel)]="reviewForm.reviewComment" rows="3" class="form-ctrl"
                 placeholder="Tell us about your experience with this product..."></textarea>
               <div class="form-actions">
@@ -212,6 +221,11 @@ import { Product, ProductVariant, ProductVariantSize, Review, ReviewSummary } fr
                   </div>
                   @if (r.reviewComment) {
                     <div class="ri-comment">"​{{ r.reviewComment }}"</div>
+                  }
+                  @if (r.reviewImageUrl) {
+                    <a class="ri-image" [href]="r.reviewImageUrl" target="_blank">
+                      <img [src]="r.reviewImageUrl" alt="Review image" />
+                    </a>
                   }
                   @if (r.adminReply) {
                     <div class="ri-reply"><strong>Beauty Textile:</strong> {{ r.adminReply }}</div>
@@ -324,6 +338,13 @@ import { Product, ProductVariant, ProductVariantSize, Review, ReviewSummary } fr
     textarea.form-ctrl { resize:vertical; }
     .form-actions { display:flex; gap:12px; margin-top:12px; flex-wrap:wrap; }
     .review-note { font-size:.78rem; color:#999; margin-top:8px; }
+    .review-image-row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+    .review-image-upload {
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:9px 14px; border:1px dashed #c9b090; border-radius:8px;
+      color:#805500; cursor:pointer; background:#fffaf2; font-size:.85rem; font-weight:600;
+    }
+    .review-image-link { color:#805500; font-size:.82rem; text-decoration:underline; }
 
     .star-filters { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:20px; }
     .filter-lbl { font-size:.82rem; color:#888; }
@@ -338,6 +359,8 @@ import { Product, ProductVariant, ProductVariantSize, Review, ReviewSummary } fr
     .ri-date { font-size:.75rem; color:#aaa; }
     .ri-stars { color:#f39c12; font-size:1rem; }
     .ri-comment { font-style:italic; color:#555; margin:8px 0; line-height:1.5; }
+    .ri-image { display:block; margin:10px 0; }
+    .ri-image img { width:120px; height:120px; object-fit:cover; border-radius:10px; border:1px solid #e0e0e0; }
     .ri-reply { background:#e8f4fd; padding:8px 12px; border-radius:6px; font-size:.82rem; margin-top:8px; }
   `]
 })
@@ -354,7 +377,8 @@ export class ProductDetailComponent implements OnInit {
   starFilter = 0;
   showReviewForm = false;
   submittingReview = false;
-  reviewForm = { customerName: '', mobileNumber: '', rating: 0, reviewComment: '' };
+  reviewForm = { customerName: '', mobileNumber: '', rating: 0, reviewComment: '', reviewImageUrl: '' };
+  reviewImageUploading = false;
   private productId = 0;
 
   /** All thumbnails: main image + extra images + variant images */
@@ -487,12 +511,13 @@ export class ProductDetailComponent implements OnInit {
       customerName: this.reviewForm.customerName.trim(),
       mobileNumber: this.reviewForm.mobileNumber || undefined,
       rating: this.reviewForm.rating,
-      reviewComment: this.reviewForm.reviewComment
+      reviewComment: this.reviewForm.reviewComment,
+      reviewImageUrl: (this.reviewForm as any).reviewImageUrl || undefined
     }).subscribe({
       next: () => {
         this.submittingReview = false;
         this.showReviewForm = false;
-        this.reviewForm = { customerName: '', mobileNumber: '', rating: 0, reviewComment: '' };
+        this.reviewForm = { customerName: '', mobileNumber: '', rating: 0, reviewComment: '', reviewImageUrl: '' };
         this.cdr.markForCheck();
         this.toast.success('Thank you! Your review is pending approval.');
       },
@@ -511,5 +536,20 @@ export class ProductDetailComponent implements OnInit {
 
   ratingLabel(r: number): string {
     return ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][r] ?? '';
+  }
+
+  onReviewImageChange(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { this.toast.error('Image must be under 5 MB'); return; }
+    this.reviewImageUploading = true;
+    this.prodSvc.uploadImage(file).subscribe({
+      next: res => {
+        (this.reviewForm as any).reviewImageUrl = res.imageUrl;
+        this.reviewImageUploading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => { this.reviewImageUploading = false; this.toast.error('Image upload failed'); this.cdr.markForCheck(); }
+    });
   }
 }

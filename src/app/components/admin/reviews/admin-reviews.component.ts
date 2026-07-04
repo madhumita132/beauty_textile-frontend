@@ -21,28 +21,44 @@ type AdminTab = 'all' | 'pending' | 'approved' | 'stats';
     @if (stats) {
       <div class="stats-row">
         <div class="stat-box">
-          <div class="stat-val">{{ stats.totalReviews }}</div>
-          <div class="stat-lbl">Total Reviews</div>
+          <mat-icon class="stat-icon">rate_review</mat-icon>
+          <div>
+            <div class="stat-val">{{ stats.totalReviews }}</div>
+            <div class="stat-lbl">Total Reviews</div>
+          </div>
         </div>
         <div class="stat-box warn">
-          <div class="stat-val">{{ stats.pendingReviews }}</div>
-          <div class="stat-lbl">Pending Approval</div>
+          <mat-icon class="stat-icon">hourglass_top</mat-icon>
+          <div>
+            <div class="stat-val">{{ stats.pendingReviews }}</div>
+            <div class="stat-lbl">Pending Approval</div>
+          </div>
         </div>
         <div class="stat-box good">
-          <div class="stat-val">{{ stats.averageRating | number:'1.1-1' }} ★</div>
-          <div class="stat-lbl">Avg Rating</div>
+          <mat-icon class="stat-icon">star</mat-icon>
+          <div>
+            <div class="stat-val">{{ stats.averageRating | number:'1.1-1' }} ★</div>
+            <div class="stat-lbl">Avg Rating</div>
+          </div>
         </div>
       </div>
     }
 
     <!-- Tabs -->
     <div class="tabs">
-      <button [class.active]="tab==='all'"      (click)="tab='all';      applyFilter()">All</button>
-      <button [class.active]="tab==='pending'"  (click)="tab='pending';  applyFilter()">
-        Pending @if (pendingCount > 0) { <span class="badge">{{ pendingCount }}</span> }
+      <button [class.active]="tab==='all'"      (click)="tab='all';      applyFilter()">
+        <mat-icon>list</mat-icon> All
       </button>
-      <button [class.active]="tab==='approved'" (click)="tab='approved'; applyFilter()">Approved</button>
-      <button [class.active]="tab==='stats'"    (click)="tab='stats'">Top Rated</button>
+      <button [class.active]="tab==='pending'"  (click)="tab='pending';  applyFilter()">
+        <mat-icon>hourglass_top</mat-icon> Pending
+        @if (pendingCount > 0) { <span class="badge">{{ pendingCount }}</span> }
+      </button>
+      <button [class.active]="tab==='approved'" (click)="tab='approved'; applyFilter()">
+        <mat-icon>verified</mat-icon> Approved
+      </button>
+      <button [class.active]="tab==='stats'"    (click)="tab='stats'">
+        <mat-icon>leaderboard</mat-icon> Top Rated
+      </button>
     </div>
 
     <!-- Top Rated tab -->
@@ -79,9 +95,10 @@ type AdminTab = 'all' | 'pending' | 'approved' | 'stats';
         </div>
       } @else {
         <div class="reviews-list">
-          @for (r of filtered; track r.id) {
+          @for (r of pagedFiltered; track r.id) {
             <div class="review-card" [class.pending]="r.status==='PENDING'" [class.rejected]="r.status==='REJECTED'">
               <div class="review-header">
+                <div class="reviewer-avatar">{{ initials(r.customerName) }}</div>
                 <div class="review-meta">
                   <span class="reviewer-name">{{ r.customerName }}</span>
                   @if (r.mobileNumber) {
@@ -91,7 +108,10 @@ type AdminTab = 'all' | 'pending' | 'approved' | 'stats';
                 </div>
                 <div class="review-right">
                   <div class="star-display">{{ starsDisplay(r.rating) }} ({{ r.rating }}/5)</div>
-                  <span class="status-chip status-{{ r.status.toLowerCase() }}">{{ r.status }}</span>
+                  <span class="status-chip status-{{ r.status.toLowerCase() }}">
+                    <mat-icon>{{ statusIcon(r.status) }}</mat-icon>
+                    {{ r.status }}
+                  </span>
                 </div>
               </div>
 
@@ -110,30 +130,31 @@ type AdminTab = 'all' | 'pending' | 'approved' | 'stats';
               <div class="review-actions">
                 @if (r.status === 'PENDING') {
                   <button class="btn btn-success btn-sm" (click)="approve(r)">
-                    <mat-icon>check</mat-icon> Approve
+                    <mat-icon>check_circle</mat-icon> Approve
                   </button>
                   <button class="btn btn-danger btn-sm" (click)="reject(r)">
-                    <mat-icon>close</mat-icon> Reject
+                    <mat-icon>cancel</mat-icon> Reject
                   </button>
                 }
                 @if (r.status === 'APPROVED') {
                   <button class="btn btn-danger btn-sm" (click)="reject(r)">
-                    <mat-icon>hide_source</mat-icon> Reject
+                    <mat-icon>cancel</mat-icon> Reject
                   </button>
                 }
                 @if (r.status === 'REJECTED') {
                   <button class="btn btn-success btn-sm" (click)="approve(r)">
-                    <mat-icon>check</mat-icon> Re-approve
+                    <mat-icon>check_circle</mat-icon> Re-approve
                   </button>
                 }
 
                 <!-- Reply toggle -->
                 <button class="btn btn-outline btn-sm" (click)="toggleReply(r)">
-                  <mat-icon>reply</mat-icon> {{ replyTargetId === r.id ? 'Cancel' : 'Reply' }}
+                  <mat-icon>{{ replyTargetId === r.id ? 'close' : 'reply' }}</mat-icon>
+                  {{ replyTargetId === r.id ? 'Cancel' : 'Reply' }}
                 </button>
 
                 <button class="btn btn-danger-outline btn-sm" (click)="deleteReview(r)">
-                  <mat-icon>delete</mat-icon>
+                  <mat-icon>delete</mat-icon> Delete
                 </button>
               </div>
 
@@ -143,28 +164,51 @@ type AdminTab = 'all' | 'pending' | 'approved' | 'stats';
                   <textarea [(ngModel)]="replyText" rows="2" class="reply-input"
                     placeholder="Type your reply here..."></textarea>
                   <button class="btn btn-primary btn-sm" [disabled]="!replyText.trim()" (click)="submitReply(r)">
-                    Send Reply
+                    <mat-icon>send</mat-icon> Send Reply
                   </button>
                 </div>
               }
             </div>
           }
         </div>
+
+        @if (totalPages > 1) {
+          <div class="review-pagination">
+            <button class="btn btn-outline btn-sm" [disabled]="page === 0" (click)="goToPage(0)">First</button>
+            <button class="btn btn-outline btn-sm" [disabled]="page === 0" (click)="goToPage(page - 1)">Prev</button>
+            <span class="page-label">Page {{ page + 1 }} of {{ totalPages }}</span>
+            <button class="btn btn-outline btn-sm" [disabled]="page >= totalPages - 1" (click)="goToPage(page + 1)">Next</button>
+            <button class="btn btn-outline btn-sm" [disabled]="page >= totalPages - 1" (click)="goToPage(totalPages - 1)">Last</button>
+          </div>
+        }
       }
     }
   `,
   styles: [`
-    .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 16px; }
+    .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 16px; color: #2c1a00; }
     .stats-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
-    .stat-box { background: #fff; border-radius: 10px; padding: 16px 24px; box-shadow: 0 2px 8px rgba(0,0,0,.06); min-width: 140px; }
-    .stat-box.warn { border-top: 3px solid #e67e22; }
-    .stat-box.good { border-top: 3px solid #27ae60; }
+    .stat-box {
+      background: #fff; border-radius: 12px; padding: 16px 24px; box-shadow: 0 2px 10px rgba(128,85,0,.08);
+      min-width: 160px; display: flex; align-items: center; gap: 14px; border-top: 3px solid #805500;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .stat-box:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(128,85,0,.14); }
+    .stat-box .stat-icon { font-size: 30px; width: 30px; height: 30px; color: #805500; }
+    .stat-box.warn { border-top-color: #e67e22; }
+    .stat-box.warn .stat-icon { color: #e67e22; }
+    .stat-box.good { border-top-color: #27ae60; }
+    .stat-box.good .stat-icon { color: #27ae60; }
     .stat-val { font-size: 1.6rem; font-weight: 700; }
     .stat-lbl { font-size: .78rem; color: #888; margin-top: 2px; }
 
     .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-    .tabs button { padding: 8px 18px; border-radius: 20px; font-size: .85rem; font-weight: 600; border: 2px solid #e0e0e0; background: #fff; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-    .tabs button.active { background: #805500; color: #fff; border-color: #805500; }
+    .tabs button {
+      padding: 8px 18px; border-radius: 22px; font-size: .85rem; font-weight: 600; border: 2px solid #e5ded1;
+      background: #fff; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: .15s;
+    }
+    .tabs button mat-icon { font-size: 18px; width: 18px; height: 18px; }
+    .tabs button:hover { border-color: #805500; }
+    .tabs button.active { background: linear-gradient(135deg, #805500, #a06800); color: #fff; border-color: #805500; box-shadow: 0 3px 10px rgba(128,85,0,.3); }
     .badge { background: #c0392b; color: #fff; border-radius: 10px; padding: 0 6px; font-size: .72rem; }
 
     .section-card { background: #fff; border-radius: 10px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
@@ -179,18 +223,31 @@ type AdminTab = 'all' | 'pending' | 'approved' | 'stats';
     .empty-state mat-icon { font-size: 48px; width: 48px; height: 48px; margin-bottom: 12px; }
 
     .reviews-list { display: flex; flex-direction: column; gap: 16px; }
-    .review-card { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); border-left: 4px solid #27ae60; }
+    .review-card {
+      background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,.06);
+      border-left: 4px solid #27ae60; transition: box-shadow .15s;
+    }
+    .review-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.1); }
     .review-card.pending { border-left-color: #e67e22; }
     .review-card.rejected { border-left-color: #e74c3c; opacity: .7; }
 
-    .review-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-    .review-meta { display: flex; flex-direction: column; gap: 2px; }
+    .review-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 12px; }
+    .reviewer-avatar {
+      flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, #805500, #a06800); color: #fff;
+      display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .85rem;
+    }
+    .review-meta { display: flex; flex-direction: column; gap: 2px; flex: 1; }
     .reviewer-name { font-weight: 700; font-size: .95rem; }
     .reviewer-phone { font-size: .78rem; color: #888; }
     .review-date { font-size: .75rem; color: #aaa; }
-    .review-right { text-align: right; }
+    .review-right { text-align: right; flex-shrink: 0; }
     .star-display { font-weight: 700; font-size: .9rem; color: #f39c12; }
-    .status-chip { display: inline-block; font-size: .72rem; font-weight: 700; padding: 2px 10px; border-radius: 10px; margin-top: 4px; text-transform: uppercase; }
+    .status-chip {
+      display: inline-flex; align-items: center; gap: 4px; font-size: .72rem; font-weight: 700;
+      padding: 3px 10px 3px 6px; border-radius: 10px; margin-top: 4px; text-transform: uppercase;
+    }
+    .status-chip mat-icon { font-size: 14px; width: 14px; height: 14px; }
     .status-pending  { background: #fff3cd; color: #856404; }
     .status-approved { background: #d4edda; color: #155724; }
     .status-rejected { background: #f8d7da; color: #721c24; }
@@ -200,11 +257,14 @@ type AdminTab = 'all' | 'pending' | 'approved' | 'stats';
     .admin-reply mat-icon { font-size: 16px; color: #2980b9; }
 
     .review-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .btn-sm { padding: 6px 14px; font-size: .8rem; display: flex; align-items: center; gap: 4px; }
-    .btn-sm mat-icon { font-size: 14px; width: 14px; height: 14px; }
+    .btn-sm { padding: 6px 14px; font-size: .8rem; display: inline-flex; align-items: center; gap: 4px; min-width: 92px; justify-content: center; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+    .btn-sm mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    .btn-sm:hover { transform: translateY(-1px); }
     .btn-success { background: #27ae60; color: #fff; border-radius: 6px; }
     .btn-danger  { background: #e74c3c; color: #fff; border-radius: 6px; }
-    .btn-danger-outline { background: none; color: #e74c3c; border: 1px solid #e74c3c; border-radius: 6px; }
+    .btn-danger-outline { background: none; color: #e74c3c; border: 1px solid #e74c3c; border-radius: 6px; box-shadow: none; }
+    .review-pagination { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; }
+    .page-label { font-size: .85rem; color: #666; min-width: 120px; text-align: center; }
 
     .reply-form { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
     .reply-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: .85rem; resize: vertical; }
@@ -218,6 +278,17 @@ export class AdminReviewsComponent implements OnInit {
   topRated: any[] = [];
   replyTargetId: number | null = null;
   replyText = '';
+  page = 0;
+  pageSize = 10;
+
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filtered.length / this.pageSize));
+  }
+
+  get pagedFiltered(): Review[] {
+    const start = this.page * this.pageSize;
+    return this.filtered.slice(start, start + this.pageSize);
+  }
 
   get pendingCount(): number { return this.reviews.filter(r => r.status === 'PENDING').length; }
 
@@ -262,6 +333,12 @@ export class AdminReviewsComponent implements OnInit {
     if (this.tab === 'all')      this.filtered = this.reviews;
     else if (this.tab === 'pending')  this.filtered = this.reviews.filter(r => r.status === 'PENDING');
     else if (this.tab === 'approved') this.filtered = this.reviews.filter(r => r.status === 'APPROVED');
+    this.page = 0;
+    this.cdr.markForCheck();
+  }
+
+  goToPage(nextPage: number): void {
+    this.page = Math.max(0, Math.min(nextPage, this.totalPages - 1));
     this.cdr.markForCheck();
   }
 
@@ -314,6 +391,18 @@ export class AdminReviewsComponent implements OnInit {
   starsDisplay(rating: number): string {
     const r = Math.round(rating);
     return '★'.repeat(r) + '☆'.repeat(5 - r);
+  }
+
+  statusIcon(status: string): string {
+    if (status === 'APPROVED') return 'verified';
+    if (status === 'REJECTED') return 'block';
+    return 'hourglass_top';
+  }
+
+  initials(name: string): string {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    return (parts[0][0] + (parts[1]?.[0] ?? '')).toUpperCase();
   }
 
   private updateLocal(updated: Review): void {

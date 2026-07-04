@@ -4,7 +4,8 @@ import { DecimalPipe } from '@angular/common';
 import { AppSettingsService } from '../../../services/app-settings.service';
 import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../services/toast.service';
-import { AppSettings, AdminUser } from '../../../models/models';
+import { HeroSlideService } from '../../../services/hero-slide.service';
+import { AppSettings, AdminUser, HeroSlide } from '../../../models/models';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -28,6 +29,7 @@ import { environment } from '../../../../environments/environment';
     <div class="tabs">
       <button [class.active]="tab==='gst'"    (click)="tab='gst'">GST</button>
       <button [class.active]="tab==='users'"  (click)="tab='users'; loadUsers()">Users</button>
+      <button [class.active]="tab==='slides'" (click)="tab='slides'; loadSlides()">Home Slides</button>
       <button [class.active]="tab==='backup'" (click)="tab='backup'">Backup</button>
     </div>
 
@@ -187,6 +189,61 @@ import { environment } from '../../../../environments/environment';
     </div>
     } <!-- /users tab -->
 
+    <!-- ═══ HOME SLIDES TAB ═══ -->
+    @if (tab === 'slides') {
+    <div class="settings-card" style="max-width:900px">
+      <div class="card-header">
+        <mat-icon>view_carousel</mat-icon>
+        <h2>Home Page Hero Slides</h2>
+      </div>
+      <p class="card-desc">
+        These slides appear in the rotating banner at the top of the customer home page.
+        Edit the text or upload a new background image for each slide.
+      </p>
+
+      @if (loadingSlides) {
+        <div class="loading-text">Loading slides…</div>
+      } @else {
+        <div class="slides-list">
+          @for (slide of slides; track slide.id) {
+            <div class="slide-card">
+              <div class="slide-image-editor">
+                <label class="upload-area" [class.uploading]="uploadingSlideId === slide.id">
+                  <input type="file" accept="image/*" (change)="onSlideImageChange($event, slide)" style="display:none" />
+                  @if (uploadingSlideId === slide.id) {
+                    <span>Uploading…</span>
+                  } @else if (slide.imagePath) {
+                    <img [src]="slide.imagePath" alt="" class="slide-thumb" />
+                  } @else {
+                    <span>Click to upload image</span>
+                  }
+                </label>
+              </div>
+              <div class="slide-fields">
+                <input class="form-ctrl" style="width:100%" [(ngModel)]="slide.kicker" placeholder="Kicker (e.g. New Collection)" />
+                <input class="form-ctrl" style="width:100%; margin-top:8px" [(ngModel)]="slide.title" placeholder="Title" />
+                <textarea class="form-ctrl" style="width:100%; margin-top:8px; resize:vertical" rows="2" [(ngModel)]="slide.text" placeholder="Description text"></textarea>
+                <div class="slide-actions">
+                  <button class="btn btn-primary btn-sm-wide" [disabled]="savingSlideId === slide.id" (click)="saveSlide(slide)">
+                    {{ savingSlideId === slide.id ? 'Saving...' : 'Save' }}
+                  </button>
+                  <button class="btn-sm btn-danger" (click)="deleteSlide(slide)">Delete</button>
+                </div>
+              </div>
+            </div>
+          } @empty {
+            <div class="loading-text">No slides yet — add one below.</div>
+          }
+        </div>
+
+        <button class="btn btn-primary" style="margin-top:8px" [disabled]="addingSlide" (click)="addSlide()">
+          <mat-icon>add</mat-icon>
+          {{ addingSlide ? 'Adding...' : 'Add Slide' }}
+        </button>
+      }
+    </div>
+    } <!-- /slides tab -->
+
     <!-- ═══ BACKUP TAB ═══ -->
     @if (tab === 'backup') {
     <div class="settings-card" style="max-width:560px">
@@ -283,22 +340,44 @@ import { environment } from '../../../../environments/environment';
     .backup-info { display:flex; align-items:center; gap:8px; background:#e8f4fd; padding:12px; border-radius:8px; margin-bottom:20px; font-size:.85rem; color:#333; }
     .bi { color:#2471a3; }
     .backup-btn { display:flex; align-items:center; gap:8px; text-decoration:none; padding:12px 20px; border-radius:8px; font-size:.95rem; width:fit-content; }
+    /* Slides tab */
+    .slides-list { display:flex; flex-direction:column; gap:16px; margin-bottom:20px; }
+    .slide-card { display:flex; gap:16px; border:1px solid #eee; border-radius:12px; padding:16px; }
+    @media (max-width:700px) { .slide-card { flex-direction:column; } }
+    .slide-image-editor { flex:0 0 200px; }
+    .slide-fields { flex:1; min-width:0; }
+    .slide-actions { display:flex; gap:8px; margin-top:10px; }
+    .btn-sm-wide { padding:6px 18px; font-size:.82rem; }
+    .upload-area {
+      display:flex; align-items:center; justify-content:center; text-align:center;
+      border:1px dashed #c9b090; border-radius:10px; height:120px; cursor:pointer;
+      font-size:.8rem; color:#888; overflow:hidden; background:#faf6ef;
+    }
+    .upload-area.uploading { opacity:.6; pointer-events:none; }
+    .slide-thumb { width:100%; height:100%; object-fit:cover; }
   `]
 })
 export class GstSettingsComponent implements OnInit {
   settings: AppSettings | null = null;
   saving = false;
   readonly gstOptions = [0, 1, 2, 3, 5, 12, 18];
-  tab: 'gst' | 'users' | 'backup' = 'gst';
+  tab: 'gst' | 'users' | 'slides' | 'backup' = 'gst';
   users: AdminUser[] = [];
   savingUser = false;
   newUser = { username: '', password: '', role: 'BILLING' };
   readonly backupUrl = `${environment.apiUrl}/admin/backup`;
 
+  slides: HeroSlide[] = [];
+  loadingSlides = false;
+  addingSlide = false;
+  savingSlideId: number | null = null;
+  uploadingSlideId: number | null = null;
+
   constructor(
     private settingsSvc: AppSettingsService,
     private authSvc: AuthService,
     private toast: ToastService,
+    private heroSlideSvc: HeroSlideService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -365,6 +444,79 @@ export class GstSettingsComponent implements OnInit {
         this.toast.success(`User "${u.username}" deleted`);
       },
       error: () => this.toast.error('Failed to delete user')
+    });
+  }
+
+  loadSlides(): void {
+    this.loadingSlides = true;
+    this.heroSlideSvc.getAll().subscribe({
+      next: s => { this.slides = s; this.loadingSlides = false; this.cdr.markForCheck(); },
+      error: () => { this.loadingSlides = false; this.toast.error('Failed to load slides'); this.cdr.markForCheck(); }
+    });
+  }
+
+  addSlide(): void {
+    this.addingSlide = true;
+    this.heroSlideSvc.create('New Collection', 'New slide title', '').subscribe({
+      next: s => {
+        this.slides = [...this.slides, s];
+        this.addingSlide = false;
+        this.cdr.markForCheck();
+        this.toast.success('Slide added');
+      },
+      error: () => {
+        this.addingSlide = false;
+        this.cdr.markForCheck();
+        this.toast.error('Failed to add slide');
+      }
+    });
+  }
+
+  saveSlide(slide: HeroSlide): void {
+    this.savingSlideId = slide.id;
+    this.heroSlideSvc.update(slide.id, slide.kicker ?? '', slide.title, slide.text ?? '').subscribe({
+      next: () => {
+        this.savingSlideId = null;
+        this.cdr.markForCheck();
+        this.toast.success('Slide saved ✓');
+      },
+      error: () => {
+        this.savingSlideId = null;
+        this.cdr.markForCheck();
+        this.toast.error('Failed to save slide');
+      }
+    });
+  }
+
+  deleteSlide(slide: HeroSlide): void {
+    if (!confirm(`Delete slide "${slide.title}"?`)) return;
+    this.heroSlideSvc.delete(slide.id).subscribe({
+      next: () => {
+        this.slides = this.slides.filter(x => x.id !== slide.id);
+        this.cdr.markForCheck();
+        this.toast.success('Slide deleted');
+      },
+      error: () => this.toast.error('Failed to delete slide')
+    });
+  }
+
+  onSlideImageChange(event: Event, slide: HeroSlide): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { this.toast.error('Image must be under 5 MB'); return; }
+    this.uploadingSlideId = slide.id;
+    this.heroSlideSvc.uploadImage(slide.id, file).subscribe({
+      next: res => {
+        slide.imagePath = res.imagePath;
+        this.uploadingSlideId = null;
+        this.toast.success('Slide image updated');
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.uploadingSlideId = null;
+        this.toast.error('Slide image upload failed');
+        this.cdr.markForCheck();
+      }
     });
   }
 }

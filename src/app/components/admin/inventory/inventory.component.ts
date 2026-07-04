@@ -6,6 +6,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { InventoryService } from '../../../services/inventory.service';
 import { ToastService } from '../../../services/toast.service';
+import { CategoryService } from '../../../services/category.service';
 import {
   ImportResult, InventoryProductRequest, InventorySummary,
   PagedResponse, Product, StockAdjustment, StockAdjustRequest
@@ -360,32 +361,36 @@ type Tab = 'dashboard' | 'products' | 'lowstock' | 'adjust' | 'audit' | 'import'
           </div>
         </div>
       }
+    }
 
-      <!-- Barcode print panel -->
-      @if (barcodeProduct) {
-        <div class="section-card barcode-panel" style="margin-top:20px">
-          <div class="section-header">
-            <h2>Barcode — {{ barcodeProduct.name }}</h2>
-            <button mat-icon-button (click)="barcodeProduct=null"><mat-icon>close</mat-icon></button>
-          </div>
-          <div class="barcode-display" id="barcode-print-area">
-            <div style="text-align:center;font-weight:700;font-size:13px">{{ barcodeProduct.name }}</div>
-            <div style="text-align:center;font-size:11px;color:#666">{{ barcodeProduct.category }}</div>
-            <img [src]="inventorySvc.getBarcodeImageUrl(barcodeProduct.barcode, 350, 80)"
-                 [alt]="barcodeProduct.barcode" style="display:block;margin:8px auto" />
-            <div style="text-align:center;font-family:monospace;font-size:12px">{{ barcodeProduct.barcode }}</div>
-            @if (barcodeProduct.sku) {
-              <div style="text-align:center;font-size:11px;color:#888">SKU: {{ barcodeProduct.sku }}</div>
-            }
-            <div style="text-align:center;font-weight:700;font-size:14px;margin-top:4px">₹{{ barcodeProduct.price }}</div>
-          </div>
-          <div class="form-actions">
-            <button mat-raised-button class="btn-brown" onclick="window.print()">
-              <mat-icon>print</mat-icon> Print Label
-            </button>
-          </div>
+    <!-- Barcode print panel — rendered regardless of active tab, since it can be
+         opened from the "Product List" tab (printBarcode) or the "Barcodes" tab
+         (selectBarcodeProduct). Nesting it under the products/lowstock tab only
+         meant clicking a card in the Barcodes tab set barcodeProduct but never
+         rendered #barcode-print-area, so window.print() produced a blank page. -->
+    @if (barcodeProduct) {
+      <div class="section-card barcode-panel" style="margin-top:20px">
+        <div class="section-header">
+          <h2>Barcode — {{ barcodeProduct.name }}</h2>
+          <button mat-icon-button (click)="barcodeProduct=null"><mat-icon>close</mat-icon></button>
         </div>
-      }
+        <div class="barcode-display" id="barcode-print-area">
+          <div class="sticker-brand">Beauty Textile</div>
+          <div class="sticker-category">{{ categoryLabel(barcodeProduct.category) }}</div>
+          <img [src]="inventorySvc.getBarcodeImageUrl(barcodeProduct.barcode, 150, 34)"
+               [alt]="barcodeProduct.barcode" class="sticker-code" (load)="onBarcodeImageLoad()" />
+          <div class="sticker-barcode mono">{{ barcodeProduct.barcode }}</div>
+          @if (barcodeProduct.sku) {
+            <div class="sticker-sku">{{ barcodeProduct.sku }}</div>
+          }
+          <div class="sticker-price">₹{{ barcodeProduct.price }}</div>
+        </div>
+        <div class="form-actions">
+          <button mat-raised-button class="btn-brown" (click)="printSelectedBarcode()">
+            <mat-icon>print</mat-icon> Print Label
+          </button>
+        </div>
+      </div>
     }
 
     <!-- ═══════════════════════ STOCK ADJUST ═══════════════════════ -->
@@ -618,11 +623,10 @@ type Tab = 'dashboard' | 'products' | 'lowstock' | 'adjust' | 'audit' | 'import'
         <div class="barcode-grid mt-16">
           @for (p of barcodePageProducts; track p.id) {
             <div class="barcode-card" (click)="selectBarcodeProduct(p)">
+              <div class="bc-brand">Beauty Textile</div>
               <div class="bc-name">{{ p.name }}</div>
-              <div class="bc-cat text-muted text-sm">{{ p.category }}</div>
               <img [src]="inventorySvc.getBarcodeImageUrl(p.barcode, 200, 60)"
                    [alt]="p.barcode" class="bc-img" loading="lazy" />
-              <div class="bc-val mono">{{ p.barcode }}</div>
               <div class="bc-price bold">₹{{ p.price | number:'1.0-0' }}</div>
             </div>
           }
@@ -653,6 +657,7 @@ type Tab = 'dashboard' | 'products' | 'lowstock' | 'adjust' | 'audit' | 'import'
     .sub-title { font-size: .95rem; font-weight: 700; color: #3e2000; margin: 0 0 10px; }
     .hint-text { color: #8a7560; font-size: .88rem; margin-bottom: 12px; }
     .empty-msg { color: #8a7560; font-style: italic; }
+    .bc-brand { font-size: .68rem; font-weight: 800; color: #805500; text-transform: uppercase; letter-spacing: .5px; }
     .text-muted { color: #8a7560; } .text-sm { font-size: .8rem; } .bold { font-weight: 600; }
     .mono { font-family: 'Courier New', monospace; font-size: .82rem; }
     .mt-16 { margin-top: 16px; }
@@ -777,20 +782,38 @@ type Tab = 'dashboard' | 'products' | 'lowstock' | 'adjust' | 'audit' | 'import'
     /* Barcodes */
     .barcode-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
     .barcode-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
-    .barcode-card { border: 1px solid #e0c898; border-radius: 10px; padding: 12px; text-align: center;
+    .barcode-card { border: 1px solid #e0c898; border-radius: 5px; padding: 5px; text-align: center;
                     cursor: pointer; background: #fff; }
     .barcode-card:hover { border-color: #805500; background: #fdf9f5; }
     .bc-name { font-weight: 600; font-size: .85rem; color: #2c1a00; }
-    .bc-cat  { margin: 2px 0 4px; }
-    .bc-img  { max-width: 100%; height: 50px; }
+    .bc-cat  { margin: 2px 0 3px; }
+    .bc-img  { max-width: 100%; height: 40px; }
     .bc-val  { font-size: .72rem; margin-top: 2px; }
-    .bc-price { color: #805500; font-size: .88rem; }
-    .barcode-panel .barcode-display { max-width: 320px; margin: 0 auto; border: 1px solid #e0c898;
-                                      border-radius: 8px; padding: 14px; }
+    .bc-price { color: #191817; font-size: .96rem; font-weight: 700; }
+    .barcode-panel .barcode-display {
+      width: 130px;
+      min-height: 70px;
+      margin: 0 auto;
+      border: 1px solid #d9c8ad;
+      border-radius: 8px;
+      padding: 4px 5px;
+      background: #fff;
+    }
+    .sticker-brand { text-align: center; font-size: 8px; font-weight: 700; color: #2c1a00; letter-spacing: .2px; }
+    .sticker-category { text-align: center; font-size: 6.5px; color: #666; margin-top: 1px; }
+    .sticker-code { display: block; margin: 3px auto 2px; width: 130px; height: 28px; }
+    .sticker-barcode { text-align: center; font-size: 7px; }
+    .sticker-sku { text-align: center; font-size: 6px; color: #777; margin-top: 1px; }
+    .sticker-price { text-align: center; font-size: 11px; font-weight: 800; color: #7a4f00; margin-top: 2px; }
 
+    /* Print rules for the barcode sticker live in the global stylesheet (styles.scss)
+       under #barcode-print-area, since Angular's emulated view encapsulation would
+       otherwise scope (and silently break) selectors like body-star written here. */
     @media print {
-      body > *:not(#barcode-print-area) { display: none !important; }
-      #barcode-print-area { display: block !important; }
+      @page {
+        size: 58mm auto;
+        margin: 2mm;
+      }
     }
 
     @media (max-width: 700px) {
@@ -869,11 +892,32 @@ export class InventoryComponent implements OnInit {
   constructor(
     public inventorySvc: InventoryService,
     private toast: ToastService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private categorySvc: CategoryService
   ) {}
+
+  private categoryParentMap = new Map<string, string>();
 
   ngOnInit(): void {
     this.loadSummary();
+    this.categorySvc.getTree().subscribe({
+      next: tree => {
+        const walk = (nodes: any[], parentName?: string) => {
+          for (const n of nodes) {
+            if (parentName) this.categoryParentMap.set(n.name, parentName);
+            if (n.children?.length) walk(n.children, n.name);
+          }
+        };
+        walk(tree);
+      },
+      error: () => {}
+    });
+  }
+
+  categoryLabel(cat: string): string {
+    if (!cat) return '';
+    const parent = this.categoryParentMap.get(cat);
+    return parent ? `${parent} • ${cat}` : cat;
   }
 
   onTabChange(): void {
@@ -1035,14 +1079,30 @@ export class InventoryComponent implements OnInit {
 
   // ── Barcode print ─────────────────────────────────────────────────────────
 
+  private pendingAutoPrint = false;
+
   printBarcode(p: Product): void {
     this.barcodeProduct = p;
-    setTimeout(() => window.print(), 300);
+    this.pendingAutoPrint = true;
   }
 
   selectBarcodeProduct(p: Product): void {
     this.barcodeProduct = p;
-    setTimeout(() => window.print(), 300);
+    this.pendingAutoPrint = true;
+  }
+
+  /** Fires once the barcode <img> has actually rendered, so we never print a blank/half-loaded label. */
+  onBarcodeImageLoad(): void {
+    if (!this.pendingAutoPrint) return;
+    this.pendingAutoPrint = false;
+    this.printSelectedBarcode();
+  }
+
+  printSelectedBarcode(): void {
+    if (!this.barcodeProduct) return;
+    window.requestAnimationFrame(() => {
+      setTimeout(() => globalThis.print(), 180);
+    });
   }
 
   onBarcodeSearch(): void {
