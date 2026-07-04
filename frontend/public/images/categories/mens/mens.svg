@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="12" fill="#f0f8ff"/>
+  <!-- Men top silhouette -->
+  <path d="M70 50 L86 44 L100 50 L114 44 L130 50 L134 65 L120 68 L118 155 L82 155 L80 68 L66 65 Z" fill="#1a3a6b" opacity="0.2"/>
+  <path d="M72 52 L86 47 L100 52 L114 47 L128 52 L131 64 L119 67 L117 151 L83 151 L81 67 L69 64 Z" fill="#2c5282" opacity="0.3"/>
+  <!-- Collar -->
+  <path d="M90 52 L100 62 L110 52" stroke="#1a3a6b" stroke-width="2" fill="none"/>
+  <!-- Placket -->
+  <line x1="100" y1="62" x2="100" y2="145" stroke="#1a3a6b" stroke-width="1.5" opacity="0.4"/>
+  <text x="100" y="178" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#3e2000">Men</text>
+</svg>

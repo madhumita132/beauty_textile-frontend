@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="12" fill="#fff5f8"/>
+  <!-- Gown shape - flared at bottom -->
+  <path d="M78 40 L100 34 L122 40 L125 48 L115 52 L125 158 L75 158 L85 52 L75 48 Z" fill="#8b0066" opacity="0.2"/>
+  <path d="M80 43 L100 38 L120 43 L122 50 L113 54 L122 155 L78 155 L87 54 L78 50 Z" fill="#a01080" opacity="0.3"/>
+  <!-- Flare indication -->
+  <path d="M87 120 L75 155 L125 155 L113 120 Z" fill="#c030a0" opacity="0.2"/>
+  <!-- Neckline -->
+  <path d="M88 52 Q100 45 112 52" stroke="#d4a000" stroke-width="2.5" fill="none"/>
+  <!-- Waist embroidery -->
+  <path d="M84 88 Q100 83 116 88" stroke="#d4a000" stroke-width="2" fill="none"/>
+  <path d="M84 92 Q100 87 116 92" stroke="#d4a000" stroke-width="1.5" fill="none" opacity="0.6"/>
+  <text x="100" y="178" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#3e2000">Gowns</text>
+</svg>

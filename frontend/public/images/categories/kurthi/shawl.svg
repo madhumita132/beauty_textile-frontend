@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 110">
+  <!-- Shawl / dupatta draped -->
+  <!-- Main shawl body - flowing drape -->
+  <path d="M10 20 Q30 10 60 15 Q90 10 110 20 Q100 60 80 80 Q60 95 40 80 Q20 65 10 20Z"
+        fill="#805500" opacity="0.9"/>
+  <!-- Fringe/border bottom -->
+  <path d="M40 80 Q60 95 80 80" stroke="#c88a00" stroke-width="3" fill="none"/>
+  <!-- Inner drape fold line -->
+  <path d="M20 30 Q50 25 100 30" stroke="#6b4700" stroke-width="2" fill="none"/>
+  <path d="M15 42 Q55 38 105 44" stroke="#6b4700" stroke-width="1.5" fill="none"/>
+  <!-- Embroidery border pattern -->
+  <path d="M35 76 Q60 90 85 76" stroke="#f0d060" stroke-width="2" fill="none"/>
+  <!-- Fringe lines -->
+  <line x1="40" y1="80" x2="38" y2="92" stroke="#c88a00" stroke-width="1.5"/>
+  <line x1="48" y1="85" x2="46" y2="97" stroke="#c88a00" stroke-width="1.5"/>
+  <line x1="56" y1="88" x2="54" y2="100" stroke="#c88a00" stroke-width="1.5"/>
+  <line x1="64" y1="88" x2="62" y2="100" stroke="#c88a00" stroke-width="1.5"/>
+  <line x1="72" y1="85" x2="70" y2="97" stroke="#c88a00" stroke-width="1.5"/>
+  <line x1="80" y1="80" x2="78" y2="92" stroke="#c88a00" stroke-width="1.5"/>
+</svg>

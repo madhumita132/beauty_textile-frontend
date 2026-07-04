@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="12" fill="#fef6f0"/>
+  <!-- Kurti/gown silhouette -->
+  <path d="M78 40 L100 35 L122 40 L124 50 L114 53 L120 155 L80 155 L86 53 L76 50 Z" fill="#805500" opacity="0.2"/>
+  <path d="M80 43 L100 38 L120 43 L121 50 L113 53 L118 152 L82 152 L87 53 L79 50 Z" fill="#a06800" opacity="0.3"/>
+  <!-- Embroidered neckline -->
+  <ellipse cx="100" cy="52" rx="15" ry="6" fill="none" stroke="#d4a000" stroke-width="2"/>
+  <circle cx="100" cy="65" r="3" fill="#d4a000" opacity="0.6"/>
+  <circle cx="91" cy="70" r="2.5" fill="#d4a000" opacity="0.5"/>
+  <circle cx="109" cy="70" r="2.5" fill="#d4a000" opacity="0.5"/>
+  <text x="100" y="178" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#3e2000">Kurtis &amp; Gowns</text>
+</svg>

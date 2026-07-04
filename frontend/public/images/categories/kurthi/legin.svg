@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 130">
+  <!-- Legin / leggings -->
+  <!-- Waistband -->
+  <rect x="22" y="18" width="56" height="10" rx="4" fill="#4a2d00"/>
+  <!-- Left leg - slim fit -->
+  <path d="M22 28 L38 28 L36 118 L26 118 Z" rx="3" fill="#805500"/>
+  <!-- Right leg - slim fit -->
+  <path d="M62 28 L78 28 L74 118 L64 118 Z" rx="3" fill="#805500"/>
+  <!-- Crotch area -->
+  <path d="M38 28 Q50 36 62 28 L62 50 Q50 58 38 50 Z" fill="#6b4700"/>
+  <!-- Ankle cuffs -->
+  <rect x="24" y="112" width="14" height="8" rx="3" fill="#4a2d00"/>
+  <rect x="62" y="112" width="14" height="8" rx="3" fill="#4a2d00"/>
+  <!-- Subtle stripe detail -->
+  <line x1="28" y1="40" x2="37" y2="112" stroke="#a06800" stroke-width="1.5" stroke-dasharray="4,4"/>
+  <line x1="63" y1="40" x2="72" y2="112" stroke="#a06800" stroke-width="1.5" stroke-dasharray="4,4"/>
+</svg>

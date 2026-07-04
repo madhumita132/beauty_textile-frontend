@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="12" fill="#fff0f5"/>
+  <!-- Girls dress - flared -->
+  <path d="M80 45 L100 40 L120 45 L122 58 L118 62 L128 158 L72 158 L82 62 L78 58 Z" fill="#e91e8c" opacity="0.2"/>
+  <path d="M82 47 L100 43 L118 47 L120 58 L116 61 L125 154 L75 154 L84 61 L80 58 Z" fill="#f06292" opacity="0.3"/>
+  <!-- Bow/sash at waist -->
+  <path d="M82 90 Q100 85 118 90" stroke="#e91e8c" stroke-width="3" fill="none"/>
+  <path d="M93 87 L100 93 L107 87" fill="#e91e8c" opacity="0.5"/>
+  <!-- Neckline -->
+  <path d="M90 55 Q100 49 110 55" stroke="#e91e8c" stroke-width="2" fill="none"/>
+  <!-- Heart motif -->
+  <path d="M100 103 C100 103 92 96 92 102 C92 106 100 112 100 112 C100 112 108 106 108 102 C108 96 100 103 100 103 Z" fill="#e91e8c" opacity="0.5"/>
+  <text x="100" y="178" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#3e2000">Girls</text>
+</svg>

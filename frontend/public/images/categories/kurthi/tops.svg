@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="12" fill="#fef9f5"/>
+  <!-- Kurti top shape -->
+  <path d="M72 45 L100 38 L128 45 L132 52 L122 56 L120 155 L80 155 L78 56 L68 52 Z" fill="#805500" opacity="0.2"/>
+  <path d="M74 48 L100 42 L126 48 L128 53 L120 57 L118 150 L82 150 L80 57 L72 53 Z" fill="#a06800" opacity="0.35"/>
+  <!-- Neck embroidery -->
+  <ellipse cx="100" cy="57" rx="18" ry="8" fill="none" stroke="#d4a000" stroke-width="2"/>
+  <!-- Print/pattern -->
+  <circle cx="90" cy="90" r="5" fill="#d4a000" opacity="0.5"/>
+  <circle cx="110" cy="90" r="5" fill="#d4a000" opacity="0.5"/>
+  <circle cx="100" cy="105" r="5" fill="#d4a000" opacity="0.5"/>
+  <circle cx="88" cy="118" r="4" fill="#d4a000" opacity="0.4"/>
+  <circle cx="112" cy="118" r="4" fill="#d4a000" opacity="0.4"/>
+  <text x="100" y="178" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#3e2000">Kurti Tops</text>
+</svg>

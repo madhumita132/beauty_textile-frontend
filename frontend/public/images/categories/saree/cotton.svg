@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="12" fill="#fff8f0"/>
+  <path d="M60 55 Q100 40 140 55 L145 145 Q100 162 55 145 Z" fill="#b8860b" opacity="0.2"/>
+  <path d="M65 60 Q100 47 135 60 L138 140 Q100 155 62 140 Z" fill="#b8860b" opacity="0.35"/>
+  <!-- Simple cotton texture lines -->
+  <line x1="75" y1="75" x2="75" y2="130" stroke="#805500" stroke-width="1.5" opacity="0.4"/>
+  <line x1="90" y1="70" x2="90" y2="135" stroke="#805500" stroke-width="1.5" opacity="0.4"/>
+  <line x1="105" y1="70" x2="105" y2="135" stroke="#805500" stroke-width="1.5" opacity="0.4"/>
+  <line x1="120" y1="72" x2="120" y2="133" stroke="#805500" stroke-width="1.5" opacity="0.4"/>
+  <line x1="68" y1="85" x2="132" y2="85" stroke="#805500" stroke-width="1.5" opacity="0.4"/>
+  <line x1="66" y1="100" x2="134" y2="100" stroke="#805500" stroke-width="1.5" opacity="0.4"/>
+  <line x1="67" y1="115" x2="133" y2="115" stroke="#805500" stroke-width="1.5" opacity="0.4"/>
+  <text x="100" y="178" text-anchor="middle" font-family="system-ui,sans-serif" font-size="13" font-weight="700" fill="#3e2000">Cotton Sarees</text>
+</svg>

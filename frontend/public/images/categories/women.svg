@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="12" fill="#fef9f5"/>
+  <!-- Women silhouette with saree drape -->
+  <path d="M85 35 Q100 30 115 35 L118 55 Q100 62 82 55 Z" fill="#805500" opacity="0.4"/>
+  <!-- Body/drape -->
+  <path d="M78 55 Q100 48 122 55 L130 160 Q100 170 70 160 Z" fill="#805500" opacity="0.2"/>
+  <path d="M82 58 Q100 52 118 58 L124 155 Q100 163 76 155 Z" fill="#a06800" opacity="0.3"/>
+  <!-- Zari border -->
+  <path d="M82 58 Q100 52 118 58" stroke="#d4a000" stroke-width="3" fill="none"/>
+  <path d="M77 152 Q100 162 123 152" stroke="#d4a000" stroke-width="3" fill="none"/>
+  <!-- Decorative motif -->
+  <circle cx="100" cy="100" r="6" fill="#d4a000" opacity="0.5"/>
+  <path d="M90 90 Q100 83 110 90 Q103 100 110 110 Q100 117 90 110 Q97 100 90 90 Z" fill="#d4a000" opacity="0.2"/>
+  <text x="100" y="185" text-anchor="middle" font-family="system-ui,sans-serif" font-size="14" font-weight="700" fill="#3e2000">Women</text>
+</svg>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <rect width="200" height="200" rx="12" fill="#f9f5ff"/>
+  <!-- Pattu Silk - lustrous, deep colors -->
+  <path d="M58 58 Q100 43 142 58 L145 144 Q100 163 55 144 Z" fill="#2c0044" opacity="0.15"/>
+  <path d="M63 63 Q100 50 137 63 L140 138 Q100 156 60 138 Z" fill="#5b0080" opacity="0.3"/>
+  <!-- Silk sheen highlights -->
+  <path d="M75 70 Q82 90 78 115" stroke="rgba(255,255,255,0.6)" stroke-width="3" fill="none"/>
+  <path d="M90 67 Q96 87 93 120" stroke="rgba(255,255,255,0.4)" stroke-width="2" fill="none"/>
+  <!-- Gold zari -->
+  <path d="M65 67 Q100 54 135 67" stroke="#c8a400" stroke-width="5" fill="none" opacity="0.9"/>
+  <path d="M63 136 Q100 150 137 136" stroke="#c8a400" stroke-width="5" fill="none" opacity="0.9"/>
+  <!-- Temple border motif -->
+  <path d="M82 100 L100 82 L118 100 L100 118 Z" stroke="#c8a400" stroke-width="2" fill="none" opacity="0.7"/>
+  <circle cx="100" cy="100" r="3" fill="#c8a400"/>
+  <text x="100" y="178" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#3e2000">Pattu Silk</text>
+</svg>
