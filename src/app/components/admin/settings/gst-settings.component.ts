@@ -6,6 +6,7 @@ import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../services/toast.service';
 import { HeroSlideService } from '../../../services/hero-slide.service';
 import { AppSettings, AdminUser, HeroSlide } from '../../../models/models';
+import { ImageUrlPipe } from '../../../shared/image-url.pipe';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -18,7 +19,7 @@ import { environment } from '../../../../environments/environment';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FormsModule, DecimalPipe,
+    FormsModule, DecimalPipe, ImageUrlPipe,
     MatIconModule, MatButtonModule, MatSlideToggleModule,
     MatSelectModule, MatFormFieldModule
   ],
@@ -215,7 +216,7 @@ import { environment } from '../../../../environments/environment';
                   @if (uploadingSlideId === slide.id) {
                     <span>Uploading…</span>
                   } @else if (slide.imagePath) {
-                    <img [src]="slide.imagePath" alt="" class="slide-thumb" />
+                    <img [src]="slide.imagePath | imageUrl" alt="" class="slide-thumb" />
                   } @else {
                     <span>Click to upload image</span>
                   }

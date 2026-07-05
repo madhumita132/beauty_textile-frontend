@@ -5,6 +5,7 @@ import { ProductService } from '../../../services/product.service';
 import { CategoryService } from '../../../services/category.service';
 import { ToastService } from '../../../services/toast.service';
 import { Product, Category, ProductVariant } from '../../../models/models';
+import { ImageUrlPipe } from '../../../shared/image-url.pipe';
 
 // Angular Material
 import { MatTableModule } from '@angular/material/table';
@@ -86,7 +87,7 @@ function aiGenerateDescription(name: string, category: string): string {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FormsModule, DecimalPipe, NgIf, SlicePipe,
+    FormsModule, DecimalPipe, NgIf, SlicePipe, ImageUrlPipe,
     MatTableModule, MatButtonModule, MatIconModule,
     MatFormFieldModule, MatInputModule, MatSelectModule,
     MatDialogModule, MatCardModule, MatChipsModule,
@@ -244,7 +245,7 @@ function aiGenerateDescription(name: string, category: string): string {
                   <span>Category Image</span>
                 </div>
                 @if (selectedCategory?.imagePath) {
-                  <img class="category-image-preview" [src]="selectedCategory?.imagePath" [alt]="selectedCategory?.name || 'Category'" />
+                  <img class="category-image-preview" [src]="selectedCategory?.imagePath | imageUrl" [alt]="selectedCategory?.name || 'Category'" />
                 }
                 <label class="upload-area" [class.uploading]="uploadingCategoryImage">
                   <input type="file" accept="image/*" (change)="onCategoryImageChange($event)" style="display:none" />
@@ -290,7 +291,7 @@ function aiGenerateDescription(name: string, category: string): string {
 
               @if (form.imageUrl) {
                 <div class="image-preview">
-                  <img [src]="form.imageUrl" alt="Product" />
+                  <img [src]="form.imageUrl | imageUrl" alt="Product" />
                   <button mat-mini-fab color="warn" class="delete-img-btn"
                           (click)="deleteImage()" matTooltip="Remove image">
                     <mat-icon>delete</mat-icon>
@@ -321,7 +322,7 @@ function aiGenerateDescription(name: string, category: string): string {
               <div class="extra-images-row">
                 @for (img of (form.extraImages || []); track img; let i = $index) {
                   <div class="extra-img-thumb">
-                    <img [src]="img" alt="Product image" />
+                    <img [src]="img | imageUrl" alt="Product image" />
                     <button mat-mini-fab color="warn" class="delete-img-btn"
                       (click)="removeExtraImage(i)" matTooltip="Remove">
                       <mat-icon>close</mat-icon>
@@ -365,7 +366,7 @@ function aiGenerateDescription(name: string, category: string): string {
                       <span class="color-swatch" [style.background]="v.colorHex || '#888'"></span>
                       <span class="variant-name">{{ v.colorName }}</span>
                       @if (v.imageUrl) {
-                        <img class="variant-thumb" [src]="v.imageUrl" [alt]="v.colorName" />
+                        <img class="variant-thumb" [src]="v.imageUrl | imageUrl" [alt]="v.colorName" />
                       }
                       <span class="text-muted text-sm" style="flex:1">
                         @if (isSareeCategory(form.category || '')) {
@@ -402,7 +403,7 @@ function aiGenerateDescription(name: string, category: string): string {
                       <label class="form-label">Variant Image (optional)</label>
                       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
                         @if (variantForm.imageUrl) {
-                          <img [src]="variantForm.imageUrl"
+                          <img [src]="variantForm.imageUrl | imageUrl"
                             style="width:60px;height:72px;object-fit:cover;border-radius:6px;border:2px solid #ddd" />
                           <button mat-icon-button color="warn" type="button"
                             (click)="variantForm.imageUrl = ''"><mat-icon>delete</mat-icon></button>
@@ -512,7 +513,7 @@ function aiGenerateDescription(name: string, category: string): string {
             <ng-container matColumnDef="image">
               <th mat-header-cell *matHeaderCellDef></th>
               <td mat-cell *matCellDef="let p">
-                <img [src]="p.imageUrl || 'assets/placeholder.jpg'"
+                <img [src]="(p.imageUrl | imageUrl) || 'assets/placeholder.jpg'"
                      class="product-thumb" alt="product" />
               </td>
             </ng-container>

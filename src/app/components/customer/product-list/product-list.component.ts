@@ -9,12 +9,13 @@ import { CartService } from '../../../services/cart.service';
 import { ToastService } from '../../../services/toast.service';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { Category, Product } from '../../../models/models';
+import { ImageUrlPipe } from '../../../shared/image-url.pipe';
 
 @Component({
   selector: 'app-product-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FormsModule, NavbarComponent, DecimalPipe],
+  imports: [RouterLink, FormsModule, NavbarComponent, DecimalPipe, ImageUrlPipe],
   template: `
     <app-navbar />
     <div class="container" style="padding-top:32px;padding-bottom:48px;">
@@ -54,7 +55,7 @@ import { Category, Product } from '../../../models/models';
             <div class="card product-card">
               <a [routerLink]="['/products', p.id]">
                 <div class="product-img">
-                  <img [src]="p.imageUrl || 'assets/placeholder.jpg'" [alt]="p.name" loading="lazy" />
+                  <img [src]="(p.imageUrl | imageUrl) || 'assets/placeholder.jpg'" [alt]="p.name" loading="lazy" />
                 </div>
                 <div class="product-info">
                   <div class="product-category">{{ p.category }}</div>

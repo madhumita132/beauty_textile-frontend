@@ -9,12 +9,13 @@ import { ToastService } from '../../../services/toast.service';
 import { ReviewService } from '../../../services/review.service';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { Product, ProductVariant, ProductVariantSize, Review, ReviewSummary } from '../../../models/models';
+import { ImageUrlPipe } from '../../../shared/image-url.pipe';
 
 @Component({
   selector: 'app-product-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, NavbarComponent, DecimalPipe, FormsModule],
+  imports: [RouterLink, NavbarComponent, DecimalPipe, FormsModule, ImageUrlPipe],
   template: `
     <app-navbar />
     <div class="container pd-page">
@@ -32,7 +33,7 @@ import { Product, ProductVariant, ProductVariantSize, Review, ReviewSummary } fr
           <!-- ── Left: Image column ── -->
           <div class="img-col">
             <div class="img-main">
-              <img [src]="displayImage" [alt]="product.name" />
+              <img [src]="displayImage | imageUrl" [alt]="product.name" />
             </div>
             <!-- thumbnail strip: product images + variant images -->
             @if (allThumbs.length > 1) {
@@ -40,7 +41,7 @@ import { Product, ProductVariant, ProductVariantSize, Review, ReviewSummary } fr
                 @for (t of allThumbs; track t.url) {
                   <button class="thumb-btn" [class.active]="displayImage === t.url"
                     (click)="selectThumb(t)" [title]="t.label">
-                    <img [src]="t.url" [alt]="t.label" />
+                    <img [src]="t.url | imageUrl" [alt]="t.label" />
                   </button>
                 }
               </div>
@@ -182,7 +183,7 @@ import { Product, ProductVariant, ProductVariantSize, Review, ReviewSummary } fr
                   <span>{{ reviewImageUploading ? 'Uploading...' : 'Add Photo (optional)' }}</span>
                 </label>
                 @if (reviewForm.reviewImageUrl) {
-                  <a [href]="reviewForm.reviewImageUrl" target="_blank" class="review-image-link">View selected image</a>
+                  <a [href]="reviewForm.reviewImageUrl | imageUrl" target="_blank" class="review-image-link">View selected image</a>
                 }
               </div>
               <textarea [(ngModel)]="reviewForm.reviewComment" rows="3" class="form-ctrl"
@@ -223,8 +224,8 @@ import { Product, ProductVariant, ProductVariantSize, Review, ReviewSummary } fr
                     <div class="ri-comment">"​{{ r.reviewComment }}"</div>
                   }
                   @if (r.reviewImageUrl) {
-                    <a class="ri-image" [href]="r.reviewImageUrl" target="_blank">
-                      <img [src]="r.reviewImageUrl" alt="Review image" />
+                    <a class="ri-image" [href]="r.reviewImageUrl | imageUrl" target="_blank">
+                      <img [src]="r.reviewImageUrl | imageUrl" alt="Review image" />
                     </a>
                   }
                   @if (r.adminReply) {

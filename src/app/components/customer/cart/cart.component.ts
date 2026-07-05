@@ -3,12 +3,13 @@ import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CartService } from '../../../services/cart.service';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
+import { ImageUrlPipe } from '../../../shared/image-url.pipe';
 
 @Component({
   selector: 'app-cart',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, NavbarComponent, DecimalPipe],
+  imports: [RouterLink, NavbarComponent, DecimalPipe, ImageUrlPipe],
   template: `
     <app-navbar />
     <div class="container" style="padding: 32px 16px 48px;">
@@ -23,7 +24,7 @@ import { NavbarComponent } from '../../shared/navbar/navbar.component';
           <div class="cart-items">
             @for (item of cart.items(); track item.product.id) {
               <div class="cart-row">
-                <img [src]="item.product.imageUrl || 'assets/placeholder.jpg'" [alt]="item.product.name" class="cart-img" />
+                <img [src]="(item.product.imageUrl | imageUrl) || 'assets/placeholder.jpg'" [alt]="item.product.name" class="cart-img" />
                 <div class="cart-details">
                   <div class="cart-name">{{ item.product.name }}</div>
                   <div class="cart-category text-muted text-sm">{{ item.product.category }}</div>

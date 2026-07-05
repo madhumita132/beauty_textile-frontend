@@ -10,12 +10,13 @@ import { HeroSlideService } from '../../../services/hero-slide.service';
 import { NavbarComponent } from '../../shared/navbar/navbar.component';
 import { Category, HeroSlide, Product, Review } from '../../../models/models';
 import { MatIconModule } from '@angular/material/icon';
+import { ImageUrlPipe, resolveImageUrl } from '../../../shared/image-url.pipe';
 
 @Component({
   selector: 'app-home',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, NavbarComponent, DecimalPipe, MatIconModule],
+  imports: [RouterLink, NavbarComponent, DecimalPipe, MatIconModule, ImageUrlPipe],
   template: `
     <app-navbar />
 
@@ -23,7 +24,7 @@ import { MatIconModule } from '@angular/material/icon';
     <section class="hero">
       <div class="hero-bg-swiper">
         @for (slide of heroSlides; track slide.id) {
-          <div class="hero-slide" [style.background-image]="'linear-gradient(120deg, rgba(17,12,6,.68), rgba(17,12,6,.18)), url(' + (slide.imagePath || 'images/categories/saree/saree.svg') + ')'">
+          <div class="hero-slide" [style.background-image]="'linear-gradient(120deg, rgba(17,12,6,.68), rgba(17,12,6,.18)), url(' + heroSlideBg(slide) + ')'">
             <div class="hero-content">
               <div class="hero-kicker">{{ slide.kicker }}</div>
               <h1>{{ slide.title }}</h1>
@@ -64,7 +65,7 @@ import { MatIconModule } from '@angular/material/icon';
               <div class="card product-card">
                 <a [routerLink]="['/products', p.id]">
                   <div class="product-img">
-                    <img [src]="p.imageUrl || 'assets/placeholder.jpg'" [alt]="p.name" loading="lazy" />
+                    <img [src]="(p.imageUrl | imageUrl) || 'assets/placeholder.jpg'" [alt]="p.name" loading="lazy" />
                   </div>
                   <div class="product-info">
                     <div class="product-category">{{ p.category }}</div>
@@ -100,7 +101,7 @@ import { MatIconModule } from '@angular/material/icon';
             <div class="main-cat-card">
               <div class="main-cat-head">
                 @if (group.imagePath) {
-                  <img class="cat-image" [src]="group.imagePath" [alt]="group.name" />
+                  <img class="cat-image" [src]="group.imagePath | imageUrl" [alt]="group.name" />
                 } @else {
                   <div class="cat-icon">{{ catIcon(group.name) }}</div>
                 }
@@ -456,6 +457,10 @@ export class HomeComponent implements OnInit {
 
   catIcon(name: string): string {
     return this.icons[name] || '🏷️';
+  }
+
+  heroSlideBg(slide: HeroSlide): string {
+    return slide.imagePath ? resolveImageUrl(slide.imagePath) : 'images/categories/saree/saree.svg';
   }
 
   addToCart(p: Product): void {
