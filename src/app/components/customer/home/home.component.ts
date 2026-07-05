@@ -336,9 +336,22 @@ import { ImageUrlPipe, resolveImageUrl } from '../../../shared/image-url.pipe';
     .footer-note { line-height:1.7; color:#c9a876; }
     @media (max-width: 980px) {
       .footer-top { grid-template-columns: 1fr 1fr; }
+      .hero-bg-swiper, .hero-slide { min-height: 460px; }
+      .hero-content { padding: 64px 24px 64px; }
+      .hero h1 { font-size: 2.4rem; }
     }
     @media (max-width: 640px) {
       .footer-top { grid-template-columns: 1fr; }
+      .hero-bg-swiper, .hero-slide { min-height: 400px; }
+      .hero-slide {
+        background-color: #2c1a00;
+        background-size: cover, contain;
+        background-position: center, center;
+      }
+      .hero-content { padding: 40px 20px 48px; margin-left: 0; max-width: 100%; }
+      .hero h1 { font-size: 1.9rem; max-width: 100%; }
+      .hero p { font-size: .95rem; max-width: 100%; }
+      .btn-lg { padding: 12px 24px; font-size: .92rem; }
     }
     .orig-price { color: #aaa; font-size: .8rem; margin-left: 4px; }
     .discount-label { background: #fdecea; color: #c62828; font-size: .7rem; font-weight: 700; padding: 1px 6px; border-radius: 6px; margin-left: 4px; }
