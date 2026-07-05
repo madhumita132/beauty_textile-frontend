@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { DecimalPipe, NgIf, SlicePipe } from '@angular/common';
+import { firstValueFrom } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ProductService } from '../../../services/product.service';
 import { CategoryService } from '../../../services/category.service';
@@ -23,6 +24,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { openImageCropDialog, MAX_UPLOAD_BYTES } from '../../../shared/image-crop.util';
 
 /** AI description templates per category */
 function aiGenerateDescription(name: string, category: string): string {
@@ -331,7 +333,7 @@ function aiGenerateDescription(name: string, category: string): string {
                 }
                 @if ((form.extraImages || []).length < 5) {
                   <label class="extra-img-add" [class.uploading]="uploadingExtraImage">
-                    <input type="file" accept="image/*" (change)="onExtraFileChange($event)" style="display:none" />
+                    <input type="file" accept="image/*" multiple (change)="onExtraFileChange($event)" style="display:none" />
                     @if (uploadingExtraImage) { <mat-spinner diameter="24"></mat-spinner> }
                     @else {
                       <mat-icon style="font-size:28px;width:28px;height:28px;color:#805500">add_photo_alternate</mat-icon>
@@ -404,20 +406,19 @@ function aiGenerateDescription(name: string, category: string): string {
                       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
                         @if (variantForm.imageUrl) {
                           <img [src]="variantForm.imageUrl | imageUrl"
-                            style="width:60px;height:72px;object-fit:cover;border-radius:6px;border:2px solid #ddd" />
+                            style="width:60px;height:80px;object-fit:cover;border-radius:6px;border:2px solid #ddd" />
                           <button mat-icon-button color="warn" type="button"
                             (click)="variantForm.imageUrl = ''"><mat-icon>delete</mat-icon></button>
                         }
-                        <label style="cursor:pointer">
-                          <input type="file" accept="image/*"
-                            (change)="onVariantImageChange($event)" style="display:none" />
-                          @if (uploadingVariantImage) { <mat-spinner diameter="24"></mat-spinner> }
-                          @else {
-                            <button mat-stroked-button type="button">
-                              <mat-icon>upload</mat-icon> Upload
-                            </button>
-                          }
-                        </label>
+                        <input type="file" accept="image/*" #variantFileInput
+                          (change)="onVariantImageChange($event)" style="display:none" />
+                        @if (uploadingVariantImage) {
+                          <mat-spinner diameter="24"></mat-spinner>
+                        } @else {
+                          <button mat-stroked-button type="button" (click)="variantFileInput.click()">
+                            <mat-icon>upload</mat-icon> Upload
+                          </button>
+                        }
                       </div>
                     </div>
 
@@ -611,7 +612,7 @@ function aiGenerateDescription(name: string, category: string): string {
     .two-col { display: flex; gap: 16px; }
     @media (max-width: 500px) { .two-col { flex-direction: column; } }
     .category-image-editor { flex:1; border: 1px dashed #c9b090; border-radius: 12px; padding: 16px; min-width: 0; }
-    .category-image-preview { width: 100%; max-width: 170px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; border: 2px solid #e0c898; margin-bottom: 10px; display: block; }
+    .category-image-preview { width: 100%; max-width: 170px; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 10px; border: 2px solid #e0c898; margin-bottom: 10px; display: block; }
     .desc-row { display: flex; gap: 12px; align-items: flex-start; }
     .ai-btn { min-width: 130px; margin-top: 4px; border-color: #805500 !important; color: #805500 !important; white-space: nowrap; }
     .ai-btn mat-icon { font-size: 18px; margin-right: 4px; }
@@ -620,7 +621,7 @@ function aiGenerateDescription(name: string, category: string): string {
     .image-section { border: 1px dashed #c9b090; border-radius: 12px; padding: 16px; margin-top: 4px; }
     .image-label { display: flex; align-items: center; gap: 6px; font-weight: 600; color: #2c1a00; margin-bottom: 12px; font-size: .9rem; }
     .image-preview { position: relative; display: inline-block; margin-bottom: 12px; }
-    .image-preview img { width: 100px; height: 120px; object-fit: cover; border-radius: 8px; border: 2px solid #e0c898; }
+    .image-preview img { width: 105px; height: 140px; object-fit: cover; border-radius: 8px; border: 2px solid #e0c898; }
     .delete-img-btn { position: absolute !important; top: -10px; right: -10px; width: 28px !important; height: 28px !important; line-height: 28px !important; }
     .delete-img-btn mat-icon { font-size: 16px !important; }
     .upload-area {
@@ -649,7 +650,7 @@ function aiGenerateDescription(name: string, category: string): string {
     @media (max-width: 768px) {
       .products-table { min-width: 680px; }
     }
-    .product-thumb { width: 52px; height: 64px; object-fit: cover; border-radius: 6px; display: block; }
+    .product-thumb { width: 54px; height: 72px; object-fit: cover; border-radius: 6px; display: block; }
     .barcode-chip { font-size: .78rem; background: #f3e8d0; color: #3e2000; padding: 2px 8px; border-radius: 12px; font-family: monospace; }
     .prod-name { font-weight: 600; font-size: .88rem; color: #2c1a00; }
     .prod-desc { font-size: .75rem; color: #8a7560; }
@@ -664,9 +665,9 @@ function aiGenerateDescription(name: string, category: string): string {
     .empty-state mat-icon { font-size: 48px; width: 48px; height: 48px; margin-bottom: 8px; opacity: .4; }
     /* Extra images */
     .extra-images-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
-    .extra-img-thumb { position:relative; width:80px; height:96px; flex-shrink:0; }
+    .extra-img-thumb { position:relative; width:84px; height:112px; flex-shrink:0; }
     .extra-img-thumb img { width:100%; height:100%; object-fit:cover; border-radius:6px; border:2px solid #e0c898; }
-    .extra-img-add { width:80px; height:96px; border:2px dashed #c9b090; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .2s; }
+    .extra-img-add { width:84px; height:112px; border:2px dashed #c9b090; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .2s; }
     .extra-img-add:hover { background:#fdf3e0; }
     /* Variants */
     .variants-section { }
@@ -674,7 +675,7 @@ function aiGenerateDescription(name: string, category: string): string {
     .variant-row { display:flex; align-items:center; gap:10px; padding:8px 12px; background:#fdf9f5; border-radius:8px; margin-bottom:6px; border:1px solid #ede4d4; }
     .color-swatch { width:22px; height:22px; border-radius:50%; border:2px solid rgba(0,0,0,.12); flex-shrink:0; }
     .variant-name { font-weight:600; font-size:.88rem; min-width:80px; }
-    .variant-thumb { width:38px; height:46px; object-fit:cover; border-radius:4px; }
+    .variant-thumb { width:39px; height:52px; object-fit:cover; border-radius:4px; }
     .variant-form { background:#fdf9f5; border-radius:12px; padding:16px; border:1px solid #e0c898; margin-top:8px; }
     .color-pick-group { display:flex; flex-direction:column; gap:4px; padding-bottom:22px; }
     .color-input { width:52px; height:36px; border:1px solid #ddd; border-radius:6px; cursor:pointer; padding:2px; }
@@ -746,7 +747,8 @@ export class ProductManagementComponent implements OnInit {
     private prodSvc: ProductService,
     private catSvc: CategoryService,
     private toast: ToastService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -882,24 +884,34 @@ export class ProductManagementComponent implements OnInit {
     this.toast.success('Description generated!');
   }
 
-  onFileChange(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
+  async onFileChange(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { this.toast.error('Image must be under 5 MB'); return; }
+    const cropped = await openImageCropDialog(this.dialog, file, 3 / 4);
+    if (!cropped) return;
+    if (cropped.size > MAX_UPLOAD_BYTES) { this.toast.error('Cropped image is still too large, try a tighter crop'); return; }
     this.uploadingImage = true;
-    this.prodSvc.uploadImage(file).subscribe({
+    this.cdr.markForCheck();
+    this.prodSvc.uploadImage(cropped).subscribe({
       next: res => { this.form.imageUrl = res.imageUrl; this.uploadingImage = false; this.toast.success('Image uploaded'); this.cdr.markForCheck(); },
       error: () => { this.uploadingImage = false; this.toast.error('Image upload failed'); this.cdr.markForCheck(); }
     });
   }
 
-  onCategoryImageChange(event: Event): void {
+  async onCategoryImageChange(event: Event): Promise<void> {
     const category = this.selectedCategory;
-    const file = (event.target as HTMLInputElement).files?.[0];
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
     if (!category || !file) return;
-    if (file.size > 5 * 1024 * 1024) { this.toast.error('Image must be under 5 MB'); return; }
+    const cropped = await openImageCropDialog(this.dialog, file, 1);
+    if (!cropped) return;
+    if (cropped.size > MAX_UPLOAD_BYTES) { this.toast.error('Cropped image is still too large, try a tighter crop'); return; }
     this.uploadingCategoryImage = true;
-    this.catSvc.uploadImage(category.id, file).subscribe({
+    this.cdr.markForCheck();
+    this.catSvc.uploadImage(category.id, cropped).subscribe({
       next: res => {
         category.imagePath = res.imagePath;
         this.uploadingCategoryImage = false;
@@ -943,20 +955,36 @@ export class ProductManagementComponent implements OnInit {
   barcodeUrl(id: number): string { return this.prodSvc.barcodeImageUrl(id); }
 
   // ── Extra Images ──────────────────────────────────────────────────────
-  onExtraFileChange(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { this.toast.error('Image must be under 5 MB'); return; }
+  async onExtraFileChange(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+    input.value = '';
+    if (files.length === 0) return;
+
+    const remaining = 5 - (this.form.extraImages?.length || 0);
+    if (remaining <= 0) return;
+    const toProcess = files.slice(0, remaining);
+    if (files.length > toProcess.length) {
+      this.toast.error(`Only ${toProcess.length} of ${files.length} images added (5 max)`);
+    }
+
     this.uploadingExtraImage = true;
-    this.prodSvc.uploadImage(file).subscribe({
-      next: res => {
+    this.cdr.markForCheck();
+    for (const file of toProcess) {
+      const cropped = await openImageCropDialog(this.dialog, file, 3 / 4);
+      if (!cropped) continue;
+      if (cropped.size > MAX_UPLOAD_BYTES) { this.toast.error(`${file.name}: cropped image is still too large, try a tighter crop`); continue; }
+      try {
+        const res = await firstValueFrom(this.prodSvc.uploadImage(cropped));
         if (!this.form.extraImages) this.form.extraImages = [];
         this.form.extraImages.push(res.imageUrl);
-        this.uploadingExtraImage = false;
         this.cdr.markForCheck();
-      },
-      error: () => { this.uploadingExtraImage = false; this.toast.error('Upload failed'); this.cdr.markForCheck(); }
-    });
+      } catch {
+        this.toast.error(`Failed to upload ${file.name}`);
+      }
+    }
+    this.uploadingExtraImage = false;
+    this.cdr.markForCheck();
   }
 
   removeExtraImage(index: number): void {
@@ -1039,12 +1067,17 @@ export class ProductManagementComponent implements OnInit {
     });
   }
 
-  onVariantImageChange(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
+  async onVariantImageChange(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { this.toast.error('Image must be under 5 MB'); return; }
+    const cropped = await openImageCropDialog(this.dialog, file, 3 / 4);
+    if (!cropped) return;
+    if (cropped.size > MAX_UPLOAD_BYTES) { this.toast.error('Cropped image is still too large, try a tighter crop'); return; }
     this.uploadingVariantImage = true;
-    this.prodSvc.uploadImage(file).subscribe({
+    this.cdr.markForCheck();
+    this.prodSvc.uploadImage(cropped).subscribe({
       next: res => { this.variantForm.imageUrl = res.imageUrl; this.uploadingVariantImage = false; this.cdr.markForCheck(); },
       error: () => { this.uploadingVariantImage = false; this.toast.error('Upload failed'); this.cdr.markForCheck(); }
     });

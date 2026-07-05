@@ -382,20 +382,38 @@ export class ProductDetailComponent implements OnInit {
   reviewImageUploading = false;
   private productId = 0;
 
-  /** All thumbnails: main image + extra images + variant images */
+  /**
+   * Thumbnails for the strip. When a colour is selected, its own photo leads
+   * the strip (and other colours' photos are hidden) so picking a colour
+   * actually swaps the pictures shown. With no colour selected yet, every
+   * colour's photo is shown so the picker can preview all of them.
+   */
   get allThumbs(): { url: string; label: string; variantId?: number }[] {
     if (!this.product) return [];
     const thumbs: { url: string; label: string; variantId?: number }[] = [];
-    const main = this.product.imageUrl || 'assets/placeholder.jpg';
-    thumbs.push({ url: main, label: this.product.name });
-    for (const url of (this.product.extraImages || [])) {
-      if (url && url !== main) thumbs.push({ url, label: this.product.name });
+    const seen = new Set<string>();
+
+    if (this.selectedVariant?.imageUrl && !seen.has(this.selectedVariant.imageUrl)) {
+      thumbs.push({ url: this.selectedVariant.imageUrl, label: this.selectedVariant.colorName, variantId: this.selectedVariant.id });
+      seen.add(this.selectedVariant.imageUrl);
     }
-    for (const v of this.variants) {
-      if (v.imageUrl && !thumbs.find(t => t.url === v.imageUrl)) {
-        thumbs.push({ url: v.imageUrl, label: v.colorName, variantId: v.id });
+
+    const main = this.product.imageUrl || 'assets/placeholder.jpg';
+    if (!seen.has(main)) { thumbs.push({ url: main, label: this.product.name }); seen.add(main); }
+
+    for (const url of (this.product.extraImages || [])) {
+      if (url && !seen.has(url)) { thumbs.push({ url, label: this.product.name }); seen.add(url); }
+    }
+
+    if (!this.selectedVariant) {
+      for (const v of this.variants) {
+        if (v.imageUrl && !seen.has(v.imageUrl)) {
+          thumbs.push({ url: v.imageUrl, label: v.colorName, variantId: v.id });
+          seen.add(v.imageUrl);
+        }
       }
     }
+
     return thumbs;
   }
 
@@ -436,7 +454,10 @@ export class ProductDetailComponent implements OnInit {
       })
     ).subscribe(variants => {
       this.variants = variants as ProductVariant[];
-      if (this.variants.length === 1) this.selectedVariant = this.variants[0];
+      if (this.variants.length === 1) {
+        this.selectedVariant = this.variants[0];
+        this.autoSelectSoleSize(this.selectedVariant);
+      }
       this.cdr.markForCheck();
     });
 
@@ -454,7 +475,8 @@ export class ProductDetailComponent implements OnInit {
   selectVariant(v: ProductVariant): void {
     this.selectedVariant = v;
     this.selectedSize = null;    // reset size on colour change
-    if (v.imageUrl) this._displayImage = v.imageUrl;
+    this.autoSelectSoleSize(v);
+    this._displayImage = v.imageUrl || '';  // falls back to the product's main image when the colour has none
     this.cdr.markForCheck();
   }
 
@@ -462,7 +484,11 @@ export class ProductDetailComponent implements OnInit {
     this._displayImage = t.url;
     if (t.variantId) {
       const v = this.variants.find(x => x.id === t.variantId);
-      if (v) { this.selectedVariant = v; this.selectedSize = null; }
+      if (v) {
+        this.selectedVariant = v;
+        this.selectedSize = null;
+        this.autoSelectSoleSize(v);
+      }
     }
     this.cdr.markForCheck();
   }
@@ -470,6 +496,11 @@ export class ProductDetailComponent implements OnInit {
   selectSize(s: ProductVariantSize): void {
     this.selectedSize = s;
     this.cdr.markForCheck();
+  }
+
+  /** Sarees/other single-size variants (e.g. "ONE SIZE") don't need a manual pick. */
+  private autoSelectSoleSize(v: ProductVariant): void {
+    if (v.sizes.length === 1) this.selectedSize = v.sizes[0];
   }
 
   canAddToCart(): boolean {

@@ -12,7 +12,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { environment } from '../../../../environments/environment';
+import { openImageCropDialog, MAX_UPLOAD_BYTES } from '../../../shared/image-crop.util';
 
 @Component({
   selector: 'app-gst-settings',
@@ -21,7 +23,7 @@ import { environment } from '../../../../environments/environment';
   imports: [
     FormsModule, DecimalPipe, ImageUrlPipe,
     MatIconModule, MatButtonModule, MatSlideToggleModule,
-    MatSelectModule, MatFormFieldModule
+    MatSelectModule, MatFormFieldModule, MatDialogModule
   ],
   template: `
     <h1 class="page-title">Shop Settings</h1>
@@ -354,7 +356,7 @@ import { environment } from '../../../../environments/environment';
     .btn-sm-wide { padding:6px 18px; font-size:.82rem; }
     .upload-area {
       display:flex; align-items:center; justify-content:center; text-align:center;
-      border:1px dashed #c9b090; border-radius:10px; height:120px; cursor:pointer;
+      border:1px dashed #c9b090; border-radius:10px; aspect-ratio: 16 / 5; cursor:pointer;
       font-size:.8rem; color:#888; overflow:hidden; background:#faf6ef;
     }
     .upload-area.uploading { opacity:.6; pointer-events:none; }
@@ -382,7 +384,8 @@ export class GstSettingsComponent implements OnInit {
     private authSvc: AuthService,
     private toast: ToastService,
     private heroSlideSvc: HeroSlideService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -505,22 +508,28 @@ export class GstSettingsComponent implements OnInit {
   }
 
   onSlideImageChange(event: Event, slide: HeroSlide): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { this.toast.error('Image must be under 5 MB'); return; }
-    this.uploadingSlideId = slide.id;
-    this.heroSlideSvc.uploadImage(slide.id, file).subscribe({
-      next: res => {
-        slide.imagePath = res.imagePath;
-        this.uploadingSlideId = null;
-        this.toast.success('Slide image updated');
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.uploadingSlideId = null;
-        this.toast.error('Slide image upload failed');
-        this.cdr.markForCheck();
-      }
+    openImageCropDialog(this.dialog, file, 16 / 5).then(cropped => {
+      if (!cropped) return;
+      if (cropped.size > MAX_UPLOAD_BYTES) { this.toast.error('Cropped image is still too large, try a tighter crop'); return; }
+      this.uploadingSlideId = slide.id;
+      this.cdr.markForCheck();
+      this.heroSlideSvc.uploadImage(slide.id, cropped).subscribe({
+        next: res => {
+          slide.imagePath = res.imagePath;
+          this.uploadingSlideId = null;
+          this.toast.success('Slide image updated');
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.uploadingSlideId = null;
+          this.toast.error('Slide image upload failed');
+          this.cdr.markForCheck();
+        }
+      });
     });
   }
 }
