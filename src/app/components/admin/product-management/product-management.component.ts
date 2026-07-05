@@ -645,6 +645,9 @@ function aiGenerateDescription(name: string, category: string): string {
     .table-card { overflow: hidden; }
     .table-wrap { overflow-x: auto; }
     .products-table { width: 100%; }
+    @media (max-width: 768px) {
+      .products-table { min-width: 680px; }
+    }
     .product-thumb { width: 52px; height: 64px; object-fit: cover; border-radius: 6px; display: block; }
     .barcode-chip { font-size: .78rem; background: #f3e8d0; color: #3e2000; padding: 2px 8px; border-radius: 12px; font-family: monospace; }
     .prod-name { font-weight: 600; font-size: .88rem; color: #2c1a00; }

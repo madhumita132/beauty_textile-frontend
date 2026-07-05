@@ -146,3 +146,45 @@ tr:hover td { background: #f8f9fa; }
 @media (min-width: 768px) {
   .product-grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
 }
+
+/* ===================================================
+   Admin Panel — Mobile Responsiveness
+   Applies broadly to every admin screen (dashboard, inventory,
+   billing, orders, reports, discounts, returns, reviews, settings)
+   since they all share these common structural class names.
+   =================================================== */
+html, body { overflow-x: hidden; }
+
+@media (max-width: 768px) {
+  .page-title { font-size: 1.15rem !important; }
+
+  .section-card { padding: 14px !important; border-radius: 10px !important; }
+
+  /* Headers that place a title + action buttons side-by-side don't fit on
+     narrow screens — stack them instead of squeezing/overflowing. */
+  .section-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .header-actions, .quick-actions, .kpi-row, .cat-chips, .tabs {
+    flex-wrap: wrap !important;
+  }
+  .header-actions, .quick-actions { width: 100%; }
+
+  /* Tables overflow horizontally via their existing `.table-wrap` scroll
+     container (or the fallback rule below) instead of squeezing columns
+     unreadably or breaking the page layout. Do NOT change `display` on
+     table/thead/tbody/tr — that breaks column alignment between rows. */
+  .table-wrap, .card, .section-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 560px; }
+
+  /* Form controls with fixed inline/desktop widths shouldn't overflow. */
+  mat-form-field { width: 100% !important; max-width: 100%; }
+  .kpi-box { flex: 1 1 45% !important; }
+}
+
+@media (max-width: 480px) {
+  .kpi-box { flex: 1 1 100% !important; }
+  .content-wrap { padding: 10px !important; }
+}

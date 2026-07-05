@@ -111,6 +111,11 @@ import { DashboardSummary } from '../../../models/models';
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: rgba(255,255,255,.08); }
 
+    @media (max-width: 768px) {
+      .dash-split { flex-direction: column; }
+      .dash-split > .card { flex: 1 1 auto; width: 100%; }
+    }
+
     /* Bar chart */
     .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 160px; overflow-x: auto; padding-bottom: 24px; position: relative; }
     .bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }

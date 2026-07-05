@@ -155,21 +155,23 @@ import { environment } from '../../../../environments/environment';
         <strong>BILLING</strong> — can only access Billing/POS.
       </p>
 
-      <table class="user-table">
-        <thead><tr><th>#</th><th>Username</th><th>Role</th><th>Actions</th></tr></thead>
-        <tbody>
-          @for (u of users; track u.id) {
-            <tr>
-              <td>{{ u.id }}</td>
-              <td>{{ u.username }}</td>
-              <td><span [class]="'role-chip role-' + u.role.toLowerCase()">{{ u.role }}</span></td>
-              <td>
-                <button class="btn-sm btn-danger" (click)="deleteUser(u)">Delete</button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table class="user-table">
+          <thead><tr><th>#</th><th>Username</th><th>Role</th><th>Actions</th></tr></thead>
+          <tbody>
+            @for (u of users; track u.id) {
+              <tr>
+                <td>{{ u.id }}</td>
+                <td>{{ u.username }}</td>
+                <td><span [class]="'role-chip role-' + u.role.toLowerCase()">{{ u.role }}</span></td>
+                <td>
+                  <button class="btn-sm btn-danger" (click)="deleteUser(u)">Delete</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
 
       <div class="new-user-form">
         <h3>Add New User</h3>
@@ -325,6 +327,7 @@ import { environment } from '../../../../environments/environment';
       padding: 3px 12px; font-size: .8rem; font-weight: 600; margin: 3px;
     }
     /* Users tab */
+    .table-wrap { overflow-x: auto; }
     .user-table { width:100%; border-collapse:collapse; margin-bottom:24px; font-size:.88rem; }
     .user-table th { text-align:left; padding:8px 10px; border-bottom:2px solid #f0f0f0; color:#666; }
     .user-table td { padding:8px 10px; border-bottom:1px solid #f8f8f8; }

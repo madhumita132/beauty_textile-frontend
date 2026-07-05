@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 
 @Component({
   selector: 'app-admin-layout',
@@ -22,7 +23,10 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     <mat-sidenav-container class="admin-container">
 
       <!-- Sidebar -->
-      <mat-sidenav mode="side" opened class="admin-sidenav">
+      <mat-sidenav #sidenav class="admin-sidenav"
+        [mode]="isMobile() ? 'over' : 'side'"
+        [opened]="!isMobile()"
+        [fixedInViewport]="isMobile()">
         <!-- Brand -->
         <div class="sidenav-brand">
           <mat-icon class="brand-icon">storefront</mat-icon>
@@ -35,7 +39,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
         <mat-divider></mat-divider>
 
         <!-- Nav items — BILLING users only see Billing/POS -->
-        <mat-nav-list class="nav-list">
+        <mat-nav-list class="nav-list" (click)="closeOnMobile(sidenav)">
           @if (isAdmin) {
             <a mat-list-item routerLink="/admin/dashboard" routerLinkActive="nav-active">
               <mat-icon matListItemIcon>dashboard</mat-icon>
@@ -95,6 +99,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
       <mat-sidenav-content class="admin-content">
         <!-- Top bar -->
         <mat-toolbar class="admin-topbar">
+          @if (isMobile()) {
+            <button mat-icon-button (click)="sidenav.toggle()" class="menu-toggle" aria-label="Toggle menu">
+              <mat-icon>menu</mat-icon>
+            </button>
+          }
           <span class="topbar-title">{{ isAdmin ? 'Admin Panel' : 'Billing — POS' }}</span>
           <span class="spacer"></span>
           <button mat-icon-button (click)="logout()" matTooltip="Logout">
@@ -113,6 +122,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     .admin-container { height: 100vh; }
     .admin-sidenav {
       width: 240px;
+      max-width: 82vw;
       background: #2c1a00;
       color: white;
       border-right: none !important;
@@ -151,19 +161,33 @@ import { MatTooltipModule } from '@angular/material/tooltip';
       box-shadow: 0 1px 4px rgba(0,0,0,.08);
       position: sticky; top: 0; z-index: 10;
     }
+    .menu-toggle { color: #805500 !important; margin-right: 4px; }
     .topbar-title { font-weight: 600; color: #805500; }
     .spacer { flex: 1; }
     .admin-content { background: #f8f4ef; }
     .content-wrap { padding: 28px; }
     @media (max-width: 768px) {
-      .admin-sidenav { width: 200px; }
-      .content-wrap { padding: 16px; }
+      .admin-sidenav { width: 240px; }
+      .content-wrap { padding: 12px; }
+      .admin-topbar { padding: 0 8px; }
+      .topbar-title { font-size: .95rem; }
     }
   `]
 })
 export class AdminLayoutComponent {
+  readonly isMobile = signal(false);
+
   get isAdmin(): boolean { return this.auth.isAdmin(); }
-  constructor(private auth: AuthService, private router: Router) {}
+
+  constructor(private auth: AuthService, private router: Router, breakpointObserver: BreakpointObserver) {
+    breakpointObserver.observe([Breakpoints.HandsetPortrait, Breakpoints.HandsetLandscape, Breakpoints.TabletPortrait, '(max-width: 768px)'])
+      .subscribe(result => this.isMobile.set(result.matches));
+  }
+
+  closeOnMobile(sidenav: { close: () => void }): void {
+    if (this.isMobile()) sidenav.close();
+  }
+
   logout(): void {
     this.auth.logout().subscribe(() => {
       this.router.navigate(['/products']);

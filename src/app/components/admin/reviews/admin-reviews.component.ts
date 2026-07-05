@@ -68,20 +68,22 @@ type AdminTab = 'all' | 'pending' | 'approved' | 'stats';
         @if (topRated.length === 0) {
           <p class="empty">No rating data yet.</p>
         } @else {
-          <table class="data-table">
-            <thead>
-              <tr><th>Product ID</th><th>Avg Rating</th><th>Reviews</th></tr>
-            </thead>
-            <tbody>
-              @for (r of topRated; track r.productId) {
-                <tr>
-                  <td>#{{ r.productId }}</td>
-                  <td><span class="stars">{{ starsDisplay(r.averageRating) }}</span> {{ r.averageRating | number:'1.1-1' }}</td>
-                  <td>{{ r.reviewCount }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th>Product ID</th><th>Avg Rating</th><th>Reviews</th></tr>
+              </thead>
+              <tbody>
+                @for (r of topRated; track r.productId) {
+                  <tr>
+                    <td>#{{ r.productId }}</td>
+                    <td><span class="stars">{{ starsDisplay(r.averageRating) }}</span> {{ r.averageRating | number:'1.1-1' }}</td>
+                    <td>{{ r.reviewCount }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
         }
       </div>
     }
@@ -213,6 +215,7 @@ type AdminTab = 'all' | 'pending' | 'approved' | 'stats';
 
     .section-card { background: #fff; border-radius: 10px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
     .section-card h2 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; }
+    .table-wrap { overflow-x: auto; }
     .data-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
     .data-table th { background: #f8f5f0; padding: 10px 14px; text-align: left; font-weight: 600; }
     .data-table td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; }
