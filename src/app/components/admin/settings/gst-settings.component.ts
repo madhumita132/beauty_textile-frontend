@@ -218,7 +218,7 @@ import { openImageCropDialog, MAX_UPLOAD_BYTES } from '../../../shared/image-cro
                   @if (uploadingSlideId === slide.id) {
                     <span>Uploading…</span>
                   } @else if (slide.imagePath) {
-                    <img [src]="slide.imagePath | imageUrl" alt="" class="slide-thumb" />
+                    <img [src]="slide.imagePath | imageUrl" alt="" class="slide-thumb" (error)="onSlideThumbError($event)" />
                   } @else {
                     <span>Click to upload image</span>
                   }
@@ -378,6 +378,7 @@ export class GstSettingsComponent implements OnInit {
   addingSlide = false;
   savingSlideId: number | null = null;
   uploadingSlideId: number | null = null;
+  private readonly slideThumbFallback = 'images/categories/saree/saree.svg';
 
   constructor(
     private settingsSvc: AppSettingsService,
@@ -531,5 +532,12 @@ export class GstSettingsComponent implements OnInit {
         }
       });
     });
+  }
+
+  onSlideThumbError(event: Event): void {
+    const img = event.target as HTMLImageElement | null;
+    if (img) {
+      img.src = this.slideThumbFallback;
+    }
   }
 }

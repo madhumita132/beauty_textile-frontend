@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CategoryService } from '../../../services/category.service';
@@ -24,7 +24,7 @@ import { ImageUrlPipe, resolveImageUrl } from '../../../shared/image-url.pipe';
     <section class="hero">
       <div class="hero-bg-swiper">
         @for (slide of heroSlides; track slide.id) {
-          <div class="hero-slide" [style.background-image]="'linear-gradient(120deg, rgba(17,12,6,.68), rgba(17,12,6,.18)), url(' + heroSlideBg(slide) + ')'">
+          <div class="hero-slide" [style.background-image]="heroSlideBackground(slide)">
             <div class="hero-content">
               <div class="hero-kicker">{{ slide.kicker }}</div>
               <h1>{{ slide.title }}</h1>
@@ -100,8 +100,12 @@ import { ImageUrlPipe, resolveImageUrl } from '../../../shared/image-url.pipe';
           @for (group of categoryGroups; track group.name) {
             <div class="main-cat-card">
               <div class="main-cat-head">
-                @if (group.imagePath) {
-                  <img class="cat-image" [src]="group.imagePath | imageUrl" [alt]="group.name" />
+                @if (categoryImageSrc(group)) {
+                  <img
+                    class="cat-image"
+                    [src]="categoryImageSrc(group)"
+                    [alt]="group.name"
+                    (error)="onCategoryImageError($event, group.name)" />
                 } @else {
                   <div class="cat-icon">{{ catIcon(group.name) }}</div>
                 }
@@ -375,7 +379,7 @@ import { ImageUrlPipe, resolveImageUrl } from '../../../shared/image-url.pipe';
     @media (max-width: 720px) { .trust-grid { grid-template-columns: repeat(2, 1fr); row-gap: 32px; } }
   `]
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
   categories: Category[] = [];
   categoryGroups: Category[] = [];
   products: Product[] = [];
@@ -398,7 +402,7 @@ export class HomeComponent implements OnInit {
       kicker: 'New Collection',
       title: 'Elegant ethnic wear for every celebration',
       text: 'Discover handpicked sarees, festive sets, and trendy styles designed to feel premium and look refined.',
-      imagePath: 'images/categories/saree/saree.svg',
+      imagePath: null,
       sortOrder: 0
     },
     {
@@ -406,7 +410,7 @@ export class HomeComponent implements OnInit {
       kicker: 'Worldwide Shipping',
       title: 'Styles that travel beautifully',
       text: 'From daily wear to festive statements, explore fashion-forward pieces that ship anywhere your customers are.',
-      imagePath: 'images/categories/kurthi/kurthi.svg',
+      imagePath: null,
       sortOrder: 1
     },
     {
@@ -414,7 +418,7 @@ export class HomeComponent implements OnInit {
       kicker: 'Freshly Launched',
       title: 'Collections for Women, Men & Kids',
       text: 'Browse elegant categories, stunning subcategories, and season-ready looks with a premium boutique feel.',
-      imagePath: 'images/categories/mens/mens.svg',
+      imagePath: null,
       sortOrder: 2
     }
   ];
@@ -434,6 +438,13 @@ export class HomeComponent implements OnInit {
   private icons: Record<string, string> = {
     Sarees: '🥻', Women: '👗', Men: '👔', Kids: '🧒', Girls: '👧', Boys: '👦', Kurthi: '🥻'
   };
+
+  private readonly brokenCategoryImageNames = new Set<string>();
+  private readonly brokenHeroSlideIds = new Set<number>();
+  private readonly categoryImageVersion = new Map<string, number>();
+  private readonly heroImageVersion = new Map<number, number>();
+  private readonly categoryRetryTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly heroRetryTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
   constructor(
     private catSvc: CategoryService,
@@ -462,18 +473,119 @@ export class HomeComponent implements OnInit {
     });
     this.heroSlideSvc.getAll().subscribe({
       next: slides => {
-        if (slides.length > 0) { this.heroSlides = slides; this.cdr.markForCheck(); }
+        if (slides.length > 0) {
+          this.heroSlides = slides;
+          this.brokenHeroSlideIds.clear();
+          this.validateHeroSlideImages(slides);
+          this.cdr.markForCheck();
+        }
       },
       error: () => {}
     });
+  }
+
+  ngOnDestroy(): void {
+    this.categoryRetryTimers.forEach(timer => clearTimeout(timer));
+    this.heroRetryTimers.forEach(timer => clearTimeout(timer));
+    this.categoryRetryTimers.clear();
+    this.heroRetryTimers.clear();
   }
 
   catIcon(name: string): string {
     return this.icons[name] || '🏷️';
   }
 
-  heroSlideBg(slide: HeroSlide): string {
-    return slide.imagePath ? resolveImageUrl(slide.imagePath) : 'images/categories/saree/saree.svg';
+  categoryImageSrc(group: Category): string {
+    const key = group.name.trim().toLowerCase();
+    if (!group.imagePath || this.brokenCategoryImageNames.has(key)) {
+      return '';
+    }
+    return this.versionedUrl(resolveImageUrl(group.imagePath), this.categoryImageVersion.get(key) ?? 0);
+  }
+
+  onCategoryImageError(_event: Event, categoryName: string): void {
+    const key = categoryName.trim().toLowerCase();
+    this.brokenCategoryImageNames.add(key);
+    this.scheduleCategoryRetry(key);
+    this.cdr.markForCheck();
+  }
+
+  heroSlideBackground(slide: HeroSlide): string {
+    const base = 'linear-gradient(120deg, rgba(17,12,6,.68), rgba(17,12,6,.18))';
+    if (!slide.imagePath || this.brokenHeroSlideIds.has(slide.id)) {
+      return base;
+    }
+    const v = this.heroImageVersion.get(slide.id) ?? 0;
+    return `${base}, url(${this.versionedUrl(resolveImageUrl(slide.imagePath), v)})`;
+  }
+
+  private validateHeroSlideImages(slides: HeroSlide[]): void {
+    slides.forEach(slide => {
+      if (!slide.imagePath) return;
+      this.probeHeroSlideImage(slide);
+    });
+  }
+
+  private scheduleCategoryRetry(key: string, delayMs = 12000): void {
+    if (this.categoryRetryTimers.has(key)) return;
+    const timer = setTimeout(() => {
+      this.categoryRetryTimers.delete(key);
+      const category = this.categoryGroups.find(g => g.name.trim().toLowerCase() === key);
+      if (!category?.imagePath) return;
+      const nextVersion = (this.categoryImageVersion.get(key) ?? 0) + 1;
+      this.categoryImageVersion.set(key, nextVersion);
+      const url = this.versionedUrl(resolveImageUrl(category.imagePath), nextVersion);
+      this.probeImage(url, ok => {
+        if (ok) {
+          this.brokenCategoryImageNames.delete(key);
+          this.cdr.markForCheck();
+          return;
+        }
+        this.scheduleCategoryRetry(key, 18000);
+      });
+    }, delayMs);
+    this.categoryRetryTimers.set(key, timer);
+  }
+
+  private probeHeroSlideImage(slide: HeroSlide): void {
+    if (!slide.imagePath) return;
+    const version = this.heroImageVersion.get(slide.id) ?? 0;
+    const url = this.versionedUrl(resolveImageUrl(slide.imagePath), version);
+    this.probeImage(url, ok => {
+      if (ok) {
+        if (this.brokenHeroSlideIds.delete(slide.id)) {
+          this.cdr.markForCheck();
+        }
+        return;
+      }
+      this.brokenHeroSlideIds.add(slide.id);
+      this.scheduleHeroSlideRetry(slide.id);
+      this.cdr.markForCheck();
+    });
+  }
+
+  private scheduleHeroSlideRetry(slideId: number, delayMs = 12000): void {
+    if (this.heroRetryTimers.has(slideId)) return;
+    const timer = setTimeout(() => {
+      this.heroRetryTimers.delete(slideId);
+      const slide = this.heroSlides.find(s => s.id === slideId);
+      if (!slide?.imagePath) return;
+      this.heroImageVersion.set(slideId, (this.heroImageVersion.get(slideId) ?? 0) + 1);
+      this.probeHeroSlideImage(slide);
+    }, delayMs);
+    this.heroRetryTimers.set(slideId, timer);
+  }
+
+  private probeImage(url: string, onDone: (ok: boolean) => void): void {
+    const probe = new Image();
+    probe.onload = () => onDone(true);
+    probe.onerror = () => onDone(false);
+    probe.src = url;
+  }
+
+  private versionedUrl(url: string, version: number): string {
+    const joiner = url.includes('?') ? '&' : '?';
+    return `${url}${joiner}v=${version}`;
   }
 
   addToCart(p: Product): void {
