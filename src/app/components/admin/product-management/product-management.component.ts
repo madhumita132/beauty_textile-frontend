@@ -130,59 +130,96 @@ function aiGenerateDescription(name: string, category: string): string {
           </button>
         </div>
 
+        <div class="add-sub-row" style="margin-bottom:16px">
+          <mat-form-field appearance="outline" class="category-filter-field">
+            <mat-label>Parent category</mat-label>
+            <mat-select [(ngModel)]="selectedParentId">
+              <mat-option [value]="null">Select parent</mat-option>
+              @for (c of allCategories; track c.id) {
+                <mat-option [value]="c.id">{{ c.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="search-field">
+            <mat-label>New subcategory</mat-label>
+            <input matInput [(ngModel)]="newSubName" placeholder="e.g. Party Wear" (keyup.enter)="addSubcategory()" />
+          </mat-form-field>
+          <button mat-raised-button color="primary" [disabled]="!newSubName.trim() || !selectedParentId || savingCategory" (click)="addSubcategory()">
+            <mat-icon>create_new_folder</mat-icon> Add Subcategory
+          </button>
+        </div>
+
+        <div class="controls-row" style="margin-top:0">
+          <mat-form-field appearance="outline" class="search-field">
+            <mat-label>Search categories</mat-label>
+            <mat-icon matPrefix>search</mat-icon>
+            <input matInput [(ngModel)]="categorySearch" (ngModelChange)="onCategorySearch()" placeholder="Name..." />
+            @if (categorySearch) {
+              <button matSuffix mat-icon-button (click)="categorySearch=''; onCategorySearch()">
+                <mat-icon>close</mat-icon>
+              </button>
+            }
+          </mat-form-field>
+          <div class="stat-chips">
+            <span class="stat-chip total">Total: {{ categoryTotalElements }}</span>
+          </div>
+        </div>
+
         @if (loadingCategories) {
           <div style="display:flex;justify-content:center;padding:40px">
             <mat-spinner></mat-spinner>
           </div>
-        } @else if (categoryTree.length === 0) {
+        } @else if (pagedCategories.length === 0) {
           <div class="empty-state">
             <mat-icon>category</mat-icon>
             <p>No categories yet</p>
           </div>
         } @else {
-          <div class="category-tree">
-            @for (root of categoryTree; track root.id) {
-              <div class="cat-node root-node" [class.inactive-node]="!root.active">
-                <div class="cat-node-row">
-                  <span class="cat-node-name">{{ root.name }}</span>
-                  <span class="cat-node-actions">
-                    <mat-slide-toggle [checked]="!!root.active" (change)="toggleActive(root)" matTooltip="Visible to customers"></mat-slide-toggle>
-                    <button mat-icon-button (click)="showSubForm(root)" matTooltip="Add subcategory">
-                      <mat-icon>create_new_folder</mat-icon>
-                    </button>
-                    <button mat-icon-button color="warn" (click)="deleteCategoryNode(root)" matTooltip="Delete">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </span>
-                </div>
+          <div class="table-wrap">
+            <table mat-table [dataSource]="pagedCategories" class="products-table">
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef>Name</th>
+                <td mat-cell *matCellDef="let c">
+                  <div class="prod-name">{{ c.name }}</div>
+                </td>
+              </ng-container>
 
-                @if (subFormParentId === root.id) {
-                  <div class="add-sub-row">
-                    <input class="form-control" style="flex:1" [(ngModel)]="newSubName" placeholder="Subcategory name" (keyup.enter)="addSubcategory(root)" />
-                    <button class="btn btn-primary btn-sm" [disabled]="!newSubName.trim() || savingCategory" (click)="addSubcategory(root)">Add</button>
-                    <button class="btn btn-outline btn-sm" (click)="subFormParentId = null">Cancel</button>
-                  </div>
-                }
+              <ng-container matColumnDef="parent">
+                <th mat-header-cell *matHeaderCellDef>Parent</th>
+                <td mat-cell *matCellDef="let c">
+                  <span class="cat-badge">{{ categoryParentName(c) }}</span>
+                </td>
+              </ng-container>
 
-                @if (root.children && root.children.length > 0) {
-                  <div class="cat-children">
-                    @for (child of root.children; track child.id) {
-                      <div class="cat-node child-node" [class.inactive-node]="!child.active">
-                        <div class="cat-node-row">
-                          <span class="cat-node-name">{{ child.name }}</span>
-                          <span class="cat-node-actions">
-                            <mat-slide-toggle [checked]="!!child.active" (change)="toggleActive(child)" matTooltip="Visible to customers"></mat-slide-toggle>
-                            <button mat-icon-button color="warn" (click)="deleteCategoryNode(child)" matTooltip="Delete">
-                              <mat-icon>delete</mat-icon>
-                            </button>
-                          </span>
-                        </div>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let c">
+                  <mat-slide-toggle [checked]="!!c.active" (change)="toggleActive(c)" matTooltip="Visible to customers"></mat-slide-toggle>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let c">
+                  <button mat-icon-button color="warn" (click)="deleteCategoryNode(c)" matTooltip="Delete">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="['name','parent','status','actions']"></tr>
+              <tr mat-row *matRowDef="let row; columns: ['name','parent','status','actions'];" class="product-row"></tr>
+            </table>
+          </div>
+          <div class="pager-row" *ngIf="categoryTotalPages > 1">
+            <button class="pager-btn" [disabled]="categoryPage === 0" (click)="goToCategoryPage(categoryPage - 1)">Prev</button>
+            @for (p of categoryPages; track p) {
+              <button class="pager-btn" [class.active]="p === categoryPage" (click)="goToCategoryPage(p)">{{ p + 1 }}</button>
             }
+            <button class="pager-btn" [disabled]="categoryPage >= categoryTotalPages - 1" (click)="goToCategoryPage(categoryPage + 1)">Next</button>
+          </div>
+          <div class="pager-meta" *ngIf="categoryTotalElements > 0">
+            Showing {{ categoryPage * pageSize + 1 }} - {{ categoryPageEnd }} of {{ categoryTotalElements }} categories
           </div>
         }
       </mat-card>
@@ -500,7 +537,7 @@ function aiGenerateDescription(name: string, category: string): string {
           </mat-select>
         </mat-form-field>
         <div class="stat-chips">
-          <span class="stat-chip total">Total: {{ products.length }}</span>
+          <span class="stat-chip total">Total: {{ productTotalElements }}</span>
           <span class="stat-chip low" *ngIf="lowStockCount > 0">Low Stock: {{ lowStockCount }}</span>
         </div>
       </div>
@@ -580,12 +617,22 @@ function aiGenerateDescription(name: string, category: string): string {
             <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="product-row"></tr>
           </table>
 
-          @if (filtered.length === 0) {
+          @if (products.length === 0) {
             <div class="empty-state">
               <mat-icon>inventory_2</mat-icon>
               <p>No products found</p>
             </div>
           }
+        </div>
+        <div class="pager-row" *ngIf="productTotalPages > 1">
+          <button class="pager-btn" [disabled]="productPage === 0" (click)="goToProductPage(productPage - 1)">Prev</button>
+          @for (p of productPages; track p) {
+            <button class="pager-btn" [class.active]="p === productPage" (click)="goToProductPage(p)">{{ p + 1 }}</button>
+          }
+          <button class="pager-btn" [disabled]="productPage >= productTotalPages - 1" (click)="goToProductPage(productPage + 1)">Next</button>
+        </div>
+        <div class="pager-meta" *ngIf="productTotalElements > 0">
+          Showing {{ productPage * pageSize + 1 }} - {{ productPageEnd }} of {{ productTotalElements }} products
         </div>
       </mat-card>
     }
@@ -698,20 +745,47 @@ function aiGenerateDescription(name: string, category: string): string {
     .child-node { background: #fff; }
     .child-node .cat-node-name { font-weight: 600; font-size: .88rem; }
     .add-sub-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+    .pager-row { display:flex; gap:8px; justify-content:center; align-items:center; padding:14px 10px 8px; flex-wrap:wrap; }
+    .pager-btn {
+      min-width: 38px;
+      height: 36px;
+      border: 1px solid #d9c4a2;
+      background: #fff8ea;
+      color: #6b4700;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0 10px;
+    }
+    .pager-btn.active { background:#805500; border-color:#805500; color:#fff; }
+    .pager-btn:disabled { opacity:.45; cursor:not-allowed; }
+    .pager-meta { text-align:center; font-size:.82rem; color:#8a7560; padding-bottom:12px; }
   `]
 })
 export class ProductManagementComponent implements OnInit {
+  readonly pageSize = 30;
+
   products: Product[] = [];
   filtered: Product[] = [];
   allCategories: Category[] = [];
   categoryFilter = '';
   tab: 'products' | 'categories' = 'products';
-  categoryTree: Category[] = [];
+
+  productPage = 0;
+  productTotalPages = 0;
+  productTotalElements = 0;
+
+  pagedCategories: Category[] = [];
+  categorySearch = '';
+  categoryPage = 0;
+  categoryTotalPages = 0;
+  categoryTotalElements = 0;
+
   loadingCategories = false;
   savingCategory = false;
   newRootName = '';
   newSubName = '';
-  subFormParentId: number | null = null;
+  selectedParentId: number | null = null;
   loading = true;
   showModal = false;
   editing: Product | null = null;
@@ -742,6 +816,8 @@ export class ProductManagementComponent implements OnInit {
   }
 
   get lowStockCount(): number { return this.products.filter(p => p.stock < 5).length; }
+  get productPageEnd(): number { return Math.min((this.productPage + 1) * this.pageSize, this.productTotalElements); }
+  get categoryPageEnd(): number { return Math.min((this.categoryPage + 1) * this.pageSize, this.categoryTotalElements); }
 
   constructor(
     private prodSvc: ProductService,
@@ -752,38 +828,81 @@ export class ProductManagementComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.load();
+    this.loadProductsPage(0);
     this.catSvc.getAll().subscribe(c => { this.allCategories = c; this.cdr.markForCheck(); });
   }
 
   load(): void {
+    this.loadProductsPage(this.productPage);
+  }
+
+  loadProductsPage(page = 0): void {
     this.loading = true;
-    this.prodSvc.getAll().subscribe(p => {
-      this.products = p;
-      this.onSearch();
-      this.loading = false;
-      this.cdr.markForCheck();
+    this.prodSvc.getPaged(page, this.pageSize, this.categoryFilter || undefined, this.searchTerm.trim() || undefined).subscribe({
+      next: p => {
+        this.productPage = p.page;
+        this.productTotalPages = p.totalPages;
+        this.productTotalElements = p.totalElements;
+        this.products = p.content;
+        this.filtered = p.content;
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.products = [];
+        this.filtered = [];
+        this.loading = false;
+        this.toast.error('Failed to load products');
+        this.cdr.markForCheck();
+      }
     });
   }
 
   onSearch(): void {
-    const q = this.searchTerm.toLowerCase();
-    let result = q ? this.products.filter(p =>
-      p.name.toLowerCase().includes(q) || p.barcode.toLowerCase().includes(q)) : this.products;
-    if (this.categoryFilter) {
-      result = result.filter(p => p.category === this.categoryFilter);
-    }
-    this.filtered = result;
+    this.loadProductsPage(0);
+  }
+
+  goToProductPage(page: number): void {
+    if (page < 0 || page >= this.productTotalPages || page === this.productPage) return;
+    this.loadProductsPage(page);
+  }
+
+  get productPages(): number[] {
+    return this.buildVisiblePages(this.productPage, this.productTotalPages);
   }
 
   // ── Category management (Categories tab) ──────────────────────────────────
 
   loadCategoryTree(): void {
+    this.loadCategoriesPage(0);
+  }
+
+  loadCategoriesPage(page = 0): void {
     this.loadingCategories = true;
-    this.catSvc.getTree().subscribe({
-      next: c => { this.categoryTree = c; this.loadingCategories = false; this.cdr.markForCheck(); },
+    this.catSvc.getPaged(page, this.pageSize, this.categorySearch.trim() || undefined).subscribe({
+      next: r => {
+        this.pagedCategories = r.content;
+        this.categoryPage = r.page;
+        this.categoryTotalPages = r.totalPages;
+        this.categoryTotalElements = r.totalElements;
+        this.loadingCategories = false;
+        this.cdr.markForCheck();
+      },
       error: () => { this.loadingCategories = false; this.toast.error('Failed to load categories'); this.cdr.markForCheck(); }
     });
+  }
+
+  onCategorySearch(): void {
+    this.loadCategoriesPage(0);
+  }
+
+  goToCategoryPage(page: number): void {
+    if (page < 0 || page >= this.categoryTotalPages || page === this.categoryPage) return;
+    this.loadCategoriesPage(page);
+  }
+
+  get categoryPages(): number[] {
+    return this.buildVisiblePages(this.categoryPage, this.categoryTotalPages);
   }
 
   addRootCategory(): void {
@@ -794,7 +913,7 @@ export class ProductManagementComponent implements OnInit {
       next: () => {
         this.newRootName = '';
         this.savingCategory = false;
-        this.loadCategoryTree();
+        this.loadCategoriesPage(0);
         this.catSvc.getAll().subscribe(c => { this.allCategories = c; this.cdr.markForCheck(); });
         this.toast.success(`Category "${name}" added`);
       },
@@ -806,21 +925,18 @@ export class ProductManagementComponent implements OnInit {
     });
   }
 
-  showSubForm(parent: Category): void {
-    this.subFormParentId = this.subFormParentId === parent.id ? null : parent.id;
-    this.newSubName = '';
-  }
-
-  addSubcategory(parent: Category): void {
+  addSubcategory(): void {
     const name = this.newSubName.trim();
+    const parentId = this.selectedParentId;
     if (!name) return;
+    if (!parentId) { this.toast.error('Select a parent category'); return; }
     this.savingCategory = true;
-    this.catSvc.create(name, parent.id).subscribe({
+    this.catSvc.create(name, parentId).subscribe({
       next: () => {
         this.newSubName = '';
-        this.subFormParentId = null;
+        this.selectedParentId = null;
         this.savingCategory = false;
-        this.loadCategoryTree();
+        this.loadCategoriesPage(0);
         this.catSvc.getAll().subscribe(c => { this.allCategories = c; this.cdr.markForCheck(); });
         this.toast.success(`Subcategory "${name}" added`);
       },
@@ -845,14 +961,11 @@ export class ProductManagementComponent implements OnInit {
   }
 
   deleteCategoryNode(cat: Category): void {
-    const childCount = cat.children?.length || 0;
-    const warning = childCount > 0
-      ? `Delete "${cat.name}" and its ${childCount} subcategor${childCount === 1 ? 'y' : 'ies'}?`
-      : `Delete "${cat.name}"?`;
+    const warning = `Delete "${cat.name}"?`;
     if (!confirm(warning)) return;
     this.catSvc.delete(cat.id).subscribe({
       next: () => {
-        this.loadCategoryTree();
+        this.loadCategoriesPage(this.categoryPage);
         this.catSvc.getAll().subscribe(c => { this.allCategories = c; this.cdr.markForCheck(); });
         this.toast.success(`"${cat.name}" deleted`);
       },
@@ -939,7 +1052,7 @@ export class ProductManagementComponent implements OnInit {
       : this.prodSvc.create(this.form as Product);
 
     obs.subscribe({
-      next: () => { this.toast.success('Product saved successfully'); this.closeModal(); this.load(); this.saving = false; this.cdr.markForCheck(); },
+      next: () => { this.toast.success('Product saved successfully'); this.closeModal(); this.loadProductsPage(this.productPage); this.saving = false; this.cdr.markForCheck(); },
       error: err => { this.toast.error(err.error?.message || 'Save failed'); this.saving = false; this.cdr.markForCheck(); }
     });
   }
@@ -947,9 +1060,20 @@ export class ProductManagementComponent implements OnInit {
   deleteProduct(p: Product): void {
     if (!confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
     this.prodSvc.delete(p.id).subscribe({
-      next: () => { this.toast.success('Product deleted'); this.load(); },
+      next: () => { this.toast.success('Product deleted'); this.loadProductsPage(this.productPage); },
       error: () => { this.toast.error('Delete failed'); this.cdr.markForCheck(); }
     });
+  }
+
+  categoryParentName(c: Category): string {
+    if (!c.parentId) return 'Root';
+    return this.allCategories.find(x => x.id === c.parentId)?.name || `#${c.parentId}`;
+  }
+
+  private buildVisiblePages(current: number, total: number): number[] {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i);
+    const pages = new Set<number>([0, total - 1, current, current - 1, current + 1]);
+    return [...pages].filter(p => p >= 0 && p < total).sort((a, b) => a - b);
   }
 
   barcodeUrl(id: number): string { return this.prodSvc.barcodeImageUrl(id); }

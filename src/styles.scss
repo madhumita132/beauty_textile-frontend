@@ -140,6 +140,18 @@ tr:hover td { background: #f8f9fa; }
   #barcode-print-area .sticker-sku { font-size: 6px; }
   #barcode-print-area .sticker-price { font-size: 11px; }
   .no-print { display: none !important; }
+  .print-only {
+    display: block !important;
+    visibility: visible;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    color: #000;
+    background: #fff;
+    z-index: 999999;
+  }
+  .print-only * { visibility: visible; }
   @page { margin: 4mm; size: 58mm auto; }
 }
 

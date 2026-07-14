@@ -19,6 +19,7 @@ interface UserSession {
 export class AuthService {
   private currentUser$ = new BehaviorSubject<UserSession | null>(null);
   private loggedIn$ = new BehaviorSubject<boolean>(false);
+  private readonly apiBase = this.resolveApiBase();
 
   readonly isLoggedIn$ = this.loggedIn$.asObservable();
   readonly currentUser = this.currentUser$.asObservable();
@@ -30,7 +31,7 @@ export class AuthService {
 
   /** Validate current session with backend **/
   checkSession(): Observable<UserSession | null> {
-    return this.http.get<UserSession>(`${environment.apiUrl}/auth/me`, { withCredentials: true }).pipe(
+    return this.http.get<UserSession>(`${this.apiBase}/auth/me`, { withCredentials: true }).pipe(
       tap(user => {
         this.currentUser$.next(user);
         this.loggedIn$.next(true);
@@ -45,7 +46,7 @@ export class AuthService {
 
   login(username: string, password: string): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(
-      `${environment.apiUrl}/auth/login`,
+      `${this.apiBase}/auth/login`,
       { username, password },
       { withCredentials: true }
     ).pipe(
@@ -58,7 +59,7 @@ export class AuthService {
 
   logout(): Observable<void> {
     return this.http.post<void>(
-      `${environment.apiUrl}/auth/logout`,
+      `${this.apiBase}/auth/logout`,
       {},
       { withCredentials: true }
     ).pipe(
@@ -83,26 +84,33 @@ export class AuthService {
   // ── User management (admin only) ──────────────────────────────────────────
 
   listUsers(): Observable<AdminUser[]> {
-    return this.http.get<AdminUser[]>(`${environment.apiUrl}/auth/users`, { withCredentials: true });
+    return this.http.get<AdminUser[]>(`${this.apiBase}/auth/users`, { withCredentials: true });
   }
 
   createUser(username: string, password: string, role: string): Observable<AdminUser> {
     return this.http.post<AdminUser>(
-      `${environment.apiUrl}/auth/users`,
+      `${this.apiBase}/auth/users`,
       { username, password, role },
       { withCredentials: true }
     );
   }
 
   deleteUser(id: number): Observable<void> {
-    return this.http.delete<void>(`${environment.apiUrl}/auth/users/${id}`, { withCredentials: true });
+    return this.http.delete<void>(`${this.apiBase}/auth/users/${id}`, { withCredentials: true });
   }
 
   changePassword(id: number, password: string): Observable<any> {
     return this.http.put(
-      `${environment.apiUrl}/auth/users/${id}/password`,
+      `${this.apiBase}/auth/users/${id}/password`,
       { password },
       { withCredentials: true }
     );
+  }
+
+  private resolveApiBase(): string {
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+      return 'http://localhost:8080/api';
+    }
+    return environment.apiUrl;
   }
 }

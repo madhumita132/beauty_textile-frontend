@@ -81,12 +81,45 @@ import { ImageUrlPipe } from '../../../shared/image-url.pipe';
         </div>
 
         @if (totalPages > 1) {
-          <div class="page-nav">
-            <button class="btn btn-outline btn-sm" [disabled]="currentPage === 0" (click)="loadPage(0)">First</button>
-            <button class="btn btn-outline btn-sm" [disabled]="currentPage === 0" (click)="loadPage(currentPage - 1)">Prev</button>
-            <span class="page-label">Page {{ currentPage + 1 }} of {{ totalPages }}</span>
-            <button class="btn btn-outline btn-sm" [disabled]="currentPage >= totalPages - 1" (click)="loadPage(currentPage + 1)">Next</button>
-            <button class="btn btn-outline btn-sm" [disabled]="currentPage >= totalPages - 1" (click)="loadPage(totalPages - 1)">Last</button>
+          <div class="page-nav" aria-label="Product pagination">
+            <button class="page-btn nav" [disabled]="currentPage === 0" (click)="loadPage(currentPage - 1)">
+              <span aria-hidden="true">‹</span>
+              <span>Previous</span>
+            </button>
+
+            <div class="page-numbers" role="group" aria-label="Pages">
+              @if (pageWindow[0] > 1) {
+                <button class="page-btn" (click)="loadPage(0)">1</button>
+                @if (pageWindow[0] > 2) {
+                  <span class="dots">…</span>
+                }
+              }
+
+              @for (p of pageWindow; track p) {
+                <button class="page-btn"
+                        [class.active]="p === currentPage + 1"
+                        [attr.aria-current]="p === currentPage + 1 ? 'page' : null"
+                        (click)="loadPage(p - 1)">
+                  {{ p }}
+                </button>
+              }
+
+              @if (pageWindow[pageWindow.length - 1] < totalPages) {
+                @if (pageWindow[pageWindow.length - 1] < totalPages - 1) {
+                  <span class="dots">…</span>
+                }
+                <button class="page-btn" (click)="loadPage(totalPages - 1)">{{ totalPages }}</button>
+              }
+            </div>
+
+            <button class="page-btn nav" [disabled]="currentPage >= totalPages - 1" (click)="loadPage(currentPage + 1)">
+              <span>Next</span>
+              <span aria-hidden="true">›</span>
+            </button>
+          </div>
+
+          <div class="page-label">
+            Showing page {{ currentPage + 1 }} of {{ totalPages }} ({{ pageSize }} products per page)
           </div>
         }
       }
@@ -124,8 +157,59 @@ import { ImageUrlPipe } from '../../../shared/image-url.pipe';
     .sub-chip:hover { background: #fff3dc; border-color: #c9a35f; }
     .sub-chip.active { background: #805500; color: #fff; border-color: #805500; }
     .empty-state { text-align: center; color: #7f8c8d; padding: 60px; font-size: 1.1rem; }
-    .page-nav { margin-top: 18px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; }
-    .page-label { min-width: 140px; text-align: center; color: #5f6b76; font-size: .88rem; }
+    .page-nav {
+      margin-top: 22px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+    }
+    .page-numbers { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .page-btn {
+      border: 1px solid #d9c8ad;
+      background: #fff;
+      color: #6a4b1f;
+      border-radius: 10px;
+      min-width: 38px;
+      height: 38px;
+      padding: 0 12px;
+      font-weight: 700;
+      font-size: .86rem;
+      cursor: pointer;
+      transition: .2s ease;
+    }
+    .page-btn:hover:not(:disabled) {
+      border-color: #b88b42;
+      background: #fff3dc;
+      transform: translateY(-1px);
+    }
+    .page-btn:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .page-btn.active {
+      background: #805500;
+      color: #fff;
+      border-color: #805500;
+      box-shadow: 0 6px 16px rgba(128, 85, 0, .24);
+    }
+    .page-btn.nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: auto;
+      padding: 0 12px;
+    }
+    .dots { color: #9b8a72; font-weight: 700; letter-spacing: 2px; }
+    .page-label {
+      margin-top: 10px;
+      text-align: center;
+      color: #6f6353;
+      font-size: .86rem;
+      font-weight: 600;
+    }
     .orig-price { color: #aaa; font-size: .8rem; margin-left: 4px; }
     .discount-label { background: #fdecea; color: #c62828; font-size: .7rem; font-weight: 700; padding: 1px 6px; border-radius: 6px; margin-left: 4px; }
     @media (max-width: 600px) { .list-header { flex-direction: column; } .search-box { width: 100%; } }
@@ -140,8 +224,19 @@ export class ProductListComponent implements OnInit {
   searchTerm = '';
   loading = true;
   currentPage = 0;
-  pageSize = 12;
+  pageSize = 50;
   totalPages = 1;
+
+  get pageWindow(): number[] {
+    if (this.totalPages <= 1) return [1];
+    const current = this.currentPage + 1;
+    const start = Math.max(1, current - 2);
+    const end = Math.min(this.totalPages, start + 4);
+    const adjustedStart = Math.max(1, end - 4);
+    const pages: number[] = [];
+    for (let p = adjustedStart; p <= end; p++) pages.push(p);
+    return pages;
+  }
 
   get activeSubcategories(): Category[] {
     if (!this.selectedGroup) return [];

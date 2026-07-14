@@ -257,16 +257,16 @@ import { openImageCropDialog, MAX_UPLOAD_BYTES } from '../../../shared/image-cro
         <h2>Database Backup</h2>
       </div>
       <p class="card-desc">
-        Download a complete MySQL dump of the beauty_textile database.
-        The backup includes all tables — products, orders, billing, reviews, settings.
+        Download an Excel backup of the beauty_textile database.
+        The file includes all key tables in separate sheets and opens easily on phone or desktop.
       </p>
       <div class="backup-info">
         <mat-icon class="bi">info</mat-icon>
-        <span>mysqldump must be installed on the server (comes with MySQL installation).</span>
+        <span>No extra database tools are needed. The backup is generated as an .xlsx file.</span>
       </div>
       <a class="btn btn-primary backup-btn" [href]="backupUrl" download>
         <mat-icon>download</mat-icon>
-        Download Backup (backup.sql)
+        Download Backup (backup.xlsx)
       </a>
     </div>
     } <!-- /backup tab -->

@@ -23,6 +23,10 @@ export class ReturnExchangeService {
     return this.http.get<Billing[]>(`${this.base}/search/phone/${encodeURIComponent(phone)}`);
   }
 
+  getBillsByBarcode(barcode: string): Observable<Billing[]> {
+    return this.http.get<Billing[]>(`${this.base}/search/barcode/${encodeURIComponent(barcode.trim())}`);
+  }
+
   getBillsByDate(date: string): Observable<Billing[]> {
     return this.http.get<Billing[]>(`${this.base}/search/date?date=${date}`);
   }

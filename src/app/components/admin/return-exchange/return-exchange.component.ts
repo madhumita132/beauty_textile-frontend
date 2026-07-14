@@ -56,6 +56,15 @@ type MainTab = 'search' | 'return' | 'exchange' | 'history';
         <h2>Find Bill</h2>
 
         <div class="search-row">
+          <!-- By Barcode -->
+          <div class="search-box">
+            <label class="form-label">Barcode</label>
+            <div class="input-btn-row">
+              <input [(ngModel)]="searchBarcode" class="form-control" placeholder="Scan or type barcode" />
+              <button mat-raised-button (click)="searchByBarcode()" class="btn-brown">Search</button>
+            </div>
+          </div>
+
           <!-- By Bill ID -->
           <div class="search-box">
             <label class="form-label">Bill Number</label>
@@ -506,6 +515,7 @@ export class ReturnExchangeComponent implements OnInit {
 
   // ── Search state ────────────────────────────────────────────────────────
   searchBillId: number | null = null;
+  searchBarcode = '';
   searchPhone = '';
   searchDate = '';
   searchResults: Billing[] = [];
@@ -612,6 +622,28 @@ export class ReturnExchangeComponent implements OnInit {
         this.cdr.markForCheck();
       },
       error: () => { this.searching = false; this.cdr.markForCheck(); }
+    });
+  }
+
+  searchByBarcode(): void {
+    const barcode = this.searchBarcode.trim();
+    if (!barcode) return;
+    this.searching = true;
+    this.searchDone = false;
+    this.svc.getBillsByBarcode(barcode).subscribe({
+      next: bills => {
+        this.searchResults = bills;
+        this.searching = false;
+        this.searchDone = true;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.searchResults = [];
+        this.searching = false;
+        this.searchDone = true;
+        this.toast.error('No bills found for that barcode');
+        this.cdr.markForCheck();
+      }
     });
   }
 

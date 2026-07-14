@@ -4,6 +4,17 @@ import { Observable, shareReplay, tap } from 'rxjs';
 import { Category } from '../models/models';
 import { environment } from '../../environments/environment';
 
+interface PagedCategoryResponse {
+  content: Category[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
+
+export type { PagedCategoryResponse };
+
 @Injectable({ providedIn: 'root' })
 export class CategoryService {
   private base = `${environment.apiUrl}/categories`;
@@ -19,6 +30,12 @@ export class CategoryService {
       this._all$ = this.http.get<Category[]>(this.base).pipe(shareReplay(1));
     }
     return this._all$;
+  }
+
+  getPaged(page = 0, size = 50, search?: string): Observable<PagedCategoryResponse> {
+    const params: Record<string, string | number> = { page, size };
+    if (search) params['search'] = search;
+    return this.http.get<PagedCategoryResponse>(this.base, { params });
   }
 
   getTree(): Observable<Category[]> {

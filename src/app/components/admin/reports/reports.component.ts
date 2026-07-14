@@ -32,6 +32,48 @@ type Tab = 'monthly' | 'product' | 'category';
           <button class="btn btn-outline btn-sm" (click)="exportMonthlyXlsx()">CSV</button>
         }
       </div>
+      @if (monthlyData) {
+        <div class="print-report print-only">
+          <div class="print-report-head">
+            <div class="print-report-title">Beauty Textile Monthly Report</div>
+            <div class="print-report-subtitle">Month: {{ month }}</div>
+          </div>
+          <div class="print-report-grid">
+            <div class="print-report-card">
+              <div class="print-report-label">Total Sales</div>
+              <div class="print-report-value">₹{{ monthlyData.totalSales | number:'1.0-0' }}</div>
+            </div>
+            <div class="print-report-card">
+              <div class="print-report-label">Orders</div>
+              <div class="print-report-value">{{ monthlyData.totalOrders }}</div>
+            </div>
+            <div class="print-report-card">
+              <div class="print-report-label">Products Sold</div>
+              <div class="print-report-value">{{ monthlyData.totalProductsSold }}</div>
+            </div>
+          </div>
+          <div class="print-report-section">
+            <div class="print-report-heading">Top Products</div>
+            @for (p of monthlyData.topProducts; track p.productId) {
+              <div class="print-report-row">
+                <span>{{ p.productName }}</span>
+                <span>{{ p.quantitySold }}</span>
+                <span>₹{{ p.revenue | number:'1.0-0' }}</span>
+              </div>
+            }
+          </div>
+          <div class="print-report-section">
+            <div class="print-report-heading">Slow Products</div>
+            @for (p of monthlyData.lowProducts; track p.productId) {
+              <div class="print-report-row">
+                <span>{{ p.productName }}</span>
+                <span>{{ p.quantitySold }}</span>
+                <span>₹{{ p.revenue | number:'1.0-0' }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
       @if (loadingReport) { <div class="spinner"></div> }
       @else if (monthlyData) {
         <div class="kpi-row">
@@ -153,6 +195,18 @@ type Tab = 'monthly' | 'product' | 'category';
     .cat-bar-track { flex: 1; background: #ecf0f1; border-radius: 20px; height: 16px; overflow: hidden; }
     .cat-bar-fill { height: 100%; background: #c0392b; border-radius: 20px; transition: width .5s; }
     .cat-bar-val { min-width: 80px; text-align: right; font-size: .85rem; font-weight: 600; }
+    .print-only { display: none; }
+    .print-report { padding: 20px; background: #fff; color: #000; }
+    .print-report-head { margin-bottom: 12px; }
+    .print-report-title { font-size: 18px; font-weight: 700; }
+    .print-report-subtitle { font-size: 12px; margin-top: 4px; }
+    .print-report-grid { display: flex; gap: 10px; margin-bottom: 14px; }
+    .print-report-card { border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px; flex: 1; }
+    .print-report-label { font-size: 10px; text-transform: uppercase; color: #666; }
+    .print-report-value { font-size: 18px; font-weight: 700; margin-top: 4px; }
+    .print-report-section { margin-top: 12px; }
+    .print-report-heading { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    .print-report-row { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; padding: 4px 0; border-bottom: 1px solid #eee; }
   `]
 })
 export class ReportsComponent implements OnInit {
@@ -201,7 +255,10 @@ export class ReportsComponent implements OnInit {
   // --- Export helpers (no external libs — browser-native) ---
 
   exportMonthlyPdf(): void {
-    window.print();          // browser print dialog; receipt CSS applies
+    this.cdr.markForCheck();
+    requestAnimationFrame(() => {
+      setTimeout(() => globalThis.print(), 150);
+    });
   }
 
   exportMonthlyXlsx(): void {

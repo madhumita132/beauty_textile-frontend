@@ -13,6 +13,8 @@ interface PagedProductResponse {
   last: boolean;
 }
 
+export type { PagedProductResponse };
+
 @Injectable({ providedIn: 'root' })
 export class ProductService {
   private base = `${environment.apiUrl}/products`;
@@ -22,24 +24,29 @@ export class ProductService {
 
   constructor(private http: HttpClient) {}
 
-  getAll(category?: string, search?: string): Observable<Product[]> {
+  getAll(category?: string, search?: string, forceRefresh = false): Observable<Product[]> {
     const key = `${category ?? ''}|${search ?? ''}`;
+    if (forceRefresh) {
+      this.cache.delete(key);
+    }
     if (!this.cache.has(key)) {
       let params: Record<string, string> = {};
       if (category) params['category'] = category;
       if (search)   params['search']   = search;
-      this.cache.set(key,
-        this.http.get<Product[]>(this.base, { params }).pipe(shareReplay(1))
+      const request$ = this.http.get<Product[]>(this.base, { params }).pipe(
+        tap({ error: () => this.cache.delete(key) }),
+        shareReplay(1)
       );
+      this.cache.set(key, request$);
     }
     return this.cache.get(key)!;
   }
 
-  getPaged(page = 0, size = 12, category?: string, search?: string): Observable<PagedProductResponse> {
+  getPaged(page = 0, size = 50, category?: string, search?: string): Observable<PagedProductResponse> {
     const params: Record<string, string | number> = { page, size };
     if (category) params['category'] = category;
     if (search) params['search'] = search;
-    return this.http.get<PagedProductResponse>(`${this.base}/paged`, { params });
+    return this.http.get<PagedProductResponse>(this.base, { params });
   }
 
   /** Call after create/update/delete to force fresh fetch */
