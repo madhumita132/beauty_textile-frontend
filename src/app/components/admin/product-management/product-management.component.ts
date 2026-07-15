@@ -764,6 +764,9 @@ function aiGenerateDescription(name: string, category: string): string {
 })
 export class ProductManagementComponent implements OnInit {
   readonly pageSize = 30;
+  private searchTimer: ReturnType<typeof setTimeout> | null = null;
+  private categorySearchTimer: ReturnType<typeof setTimeout> | null = null;
+  private categoriesLoaded = false;
 
   products: Product[] = [];
   filtered: Product[] = [];
@@ -829,7 +832,7 @@ export class ProductManagementComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadProductsPage(0);
-    this.catSvc.getAll().subscribe(c => { this.allCategories = c; this.cdr.markForCheck(); });
+    this.refreshAllCategories();
   }
 
   load(): void {
@@ -859,7 +862,11 @@ export class ProductManagementComponent implements OnInit {
   }
 
   onSearch(): void {
-    this.loadProductsPage(0);
+    if (this.searchTimer) {
+      clearTimeout(this.searchTimer);
+      this.searchTimer = null;
+    }
+    this.searchTimer = setTimeout(() => this.loadProductsPage(0), 260);
   }
 
   goToProductPage(page: number): void {
@@ -874,6 +881,10 @@ export class ProductManagementComponent implements OnInit {
   // ── Category management (Categories tab) ──────────────────────────────────
 
   loadCategoryTree(): void {
+    if (!this.categoriesLoaded) {
+      this.refreshAllCategories();
+      this.categoriesLoaded = true;
+    }
     this.loadCategoriesPage(0);
   }
 
@@ -893,7 +904,11 @@ export class ProductManagementComponent implements OnInit {
   }
 
   onCategorySearch(): void {
-    this.loadCategoriesPage(0);
+    if (this.categorySearchTimer) {
+      clearTimeout(this.categorySearchTimer);
+      this.categorySearchTimer = null;
+    }
+    this.categorySearchTimer = setTimeout(() => this.loadCategoriesPage(0), 260);
   }
 
   goToCategoryPage(page: number): void {
@@ -914,7 +929,7 @@ export class ProductManagementComponent implements OnInit {
         this.newRootName = '';
         this.savingCategory = false;
         this.loadCategoriesPage(0);
-        this.catSvc.getAll().subscribe(c => { this.allCategories = c; this.cdr.markForCheck(); });
+        this.refreshAllCategories();
         this.toast.success(`Category "${name}" added`);
       },
       error: err => {
@@ -937,7 +952,7 @@ export class ProductManagementComponent implements OnInit {
         this.selectedParentId = null;
         this.savingCategory = false;
         this.loadCategoriesPage(0);
-        this.catSvc.getAll().subscribe(c => { this.allCategories = c; this.cdr.markForCheck(); });
+        this.refreshAllCategories();
         this.toast.success(`Subcategory "${name}" added`);
       },
       error: err => {
@@ -966,7 +981,7 @@ export class ProductManagementComponent implements OnInit {
     this.catSvc.delete(cat.id).subscribe({
       next: () => {
         this.loadCategoriesPage(this.categoryPage);
-        this.catSvc.getAll().subscribe(c => { this.allCategories = c; this.cdr.markForCheck(); });
+        this.refreshAllCategories();
         this.toast.success(`"${cat.name}" deleted`);
       },
       error: () => this.toast.error('Failed to delete category')
@@ -1077,6 +1092,13 @@ export class ProductManagementComponent implements OnInit {
   }
 
   barcodeUrl(id: number): string { return this.prodSvc.barcodeImageUrl(id); }
+
+  private refreshAllCategories(): void {
+    this.catSvc.getAll().subscribe(c => {
+      this.allCategories = c;
+      this.cdr.markForCheck();
+    });
+  }
 
   // ── Extra Images ──────────────────────────────────────────────────────
   async onExtraFileChange(event: Event): Promise<void> {

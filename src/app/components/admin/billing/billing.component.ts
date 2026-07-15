@@ -241,6 +241,7 @@ interface BillLine {
 })
 export class BillingComponent implements OnInit, AfterViewInit {
   @ViewChild('barcodeInput') barcodeEl!: ElementRef<HTMLInputElement>;
+  private searchTimer: ReturnType<typeof setTimeout> | null = null;
   billLines: BillLine[] = [];
   barcodeInput_ = '';
   searchTerm = '';
@@ -309,8 +310,22 @@ export class BillingComponent implements OnInit, AfterViewInit {
   }
 
   searchProducts(): void {
-    if (!this.searchTerm.trim()) { this.searchResults = []; return; }
-    this.prodSvc.getAll(undefined, this.searchTerm).subscribe(r => { this.searchResults = r.slice(0, 8); this.cdr.markForCheck(); });
+    if (this.searchTimer) {
+      clearTimeout(this.searchTimer);
+      this.searchTimer = null;
+    }
+    const term = this.searchTerm.trim();
+    if (term.length < 2) {
+      this.searchResults = [];
+      this.cdr.markForCheck();
+      return;
+    }
+    this.searchTimer = setTimeout(() => {
+      this.prodSvc.getAll(undefined, term).subscribe(r => {
+        this.searchResults = r.slice(0, 8);
+        this.cdr.markForCheck();
+      });
+    }, 220);
   }
 
   addProduct(p: Product): void {

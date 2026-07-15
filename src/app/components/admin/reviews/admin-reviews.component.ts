@@ -279,6 +279,7 @@ export class AdminReviewsComponent implements OnInit {
   filtered: Review[] = [];
   stats: ReviewStats | null = null;
   topRated: any[] = [];
+  private topRatedLoaded = false;
   replyTargetId: number | null = null;
   replyText = '';
   page = 0;
@@ -303,8 +304,6 @@ export class AdminReviewsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadAll();
-    this.loadStats();
-    this.loadTopRated();
   }
 
   private loadAll(): void {
@@ -312,6 +311,7 @@ export class AdminReviewsComponent implements OnInit {
       next: r => {
         this.reviews = r;
         this.applyFilter();
+        this.loadStats();
         this.cdr.markForCheck();
       },
       error: () => this.toast.error('Failed to load reviews')
@@ -326,8 +326,9 @@ export class AdminReviewsComponent implements OnInit {
   }
 
   private loadTopRated(): void {
+    if (this.topRatedLoaded) return;
     this.svc.getTopRated().subscribe({
-      next: t => { this.topRated = t; this.cdr.markForCheck(); },
+      next: t => { this.topRated = t; this.topRatedLoaded = true; this.cdr.markForCheck(); },
       error: () => {}
     });
   }
@@ -336,6 +337,11 @@ export class AdminReviewsComponent implements OnInit {
     if (this.tab === 'all')      this.filtered = this.reviews;
     else if (this.tab === 'pending')  this.filtered = this.reviews.filter(r => r.status === 'PENDING');
     else if (this.tab === 'approved') this.filtered = this.reviews.filter(r => r.status === 'APPROVED');
+
+    if (this.tab === 'stats') {
+      this.loadTopRated();
+    }
+
     this.page = 0;
     this.cdr.markForCheck();
   }

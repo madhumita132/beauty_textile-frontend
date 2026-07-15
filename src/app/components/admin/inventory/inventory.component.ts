@@ -853,6 +853,7 @@ export class InventoryComponent implements OnInit {
   barcodeProduct: Product | null = null;
   barcodeSearch = '';
   barcodePageProducts: Product[] = [];
+  private barcodeSearchTimer: ReturnType<typeof setTimeout> | null = null;
 
   // ── Stock adjustment ─────────────────────────────────────────────────────
   adjSearch = '';
@@ -922,7 +923,14 @@ export class InventoryComponent implements OnInit {
 
   onTabChange(): void {
     if (this.tab === 'products' || this.tab === 'lowstock') {
-      this.loadPage(0);
+      if (!this.pagedResult || this.currentPage !== 0) {
+        this.loadPage(0);
+      }
+      return;
+    }
+
+    if (this.tab === 'barcodes' && this.barcodePageProducts.length === 0 && this.barcodeSearch.trim().length >= 2) {
+      this.onBarcodeSearch();
     }
   }
 
@@ -1106,11 +1114,22 @@ export class InventoryComponent implements OnInit {
   }
 
   onBarcodeSearch(): void {
-    if (this.barcodeSearch.length < 2) { this.barcodePageProducts = []; return; }
-    this.inventorySvc.searchProducts(this.barcodeSearch, 0, 24).subscribe({
-      next: r => { this.barcodePageProducts = r.content; this.cdr.markForCheck(); },
-      error: () => {}
-    });
+    if (this.barcodeSearchTimer) {
+      clearTimeout(this.barcodeSearchTimer);
+      this.barcodeSearchTimer = null;
+    }
+    const term = this.barcodeSearch.trim();
+    if (term.length < 2) {
+      this.barcodePageProducts = [];
+      this.cdr.markForCheck();
+      return;
+    }
+    this.barcodeSearchTimer = setTimeout(() => {
+      this.inventorySvc.searchProducts(term, 0, 24).subscribe({
+        next: r => { this.barcodePageProducts = r.content; this.cdr.markForCheck(); },
+        error: () => {}
+      });
+    }, 260);
   }
 
   // ── Stock Adjust ──────────────────────────────────────────────────────────
