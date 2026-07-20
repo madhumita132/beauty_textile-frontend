@@ -175,7 +175,31 @@ function aiGenerateDescription(name: string, category: string): string {
             <p>No categories yet</p>
           </div>
         } @else {
-          <div class="table-wrap">
+          <div class="categories-mobile-list">
+            @for (c of pagedCategories; track c.id) {
+              <div class="category-mobile-card" [class.inactive-card]="!c.active">
+                <div class="category-mobile-main">
+                  <div>
+                    <div class="prod-name">{{ c.name }}</div>
+                    <div class="category-mobile-parent">Parent: {{ categoryParentName(c) }}</div>
+                  </div>
+                  <span class="cat-badge">{{ c.active ? 'Visible' : 'Hidden' }}</span>
+                </div>
+                <div class="category-mobile-actions">
+                  <div class="category-mobile-toggle">
+                    <span class="category-mobile-label">Customer visibility</span>
+                    <mat-slide-toggle [checked]="!!c.active" (change)="toggleActive(c)"></mat-slide-toggle>
+                  </div>
+                  <button mat-stroked-button color="warn" (click)="deleteCategoryNode(c)">
+                    <mat-icon>delete</mat-icon>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="table-wrap categories-desktop-table">
             <table mat-table [dataSource]="pagedCategories" class="products-table">
               <ng-container matColumnDef="name">
                 <th mat-header-cell *matHeaderCellDef>Name</th>
@@ -735,6 +759,55 @@ function aiGenerateDescription(name: string, category: string): string {
     /* Categories tab */
     .categories-card { padding: 24px; }
     .add-root-row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; }
+    .categories-mobile-list { display: none; }
+    .category-mobile-card {
+      border: 1px solid #eadcc4;
+      border-radius: 14px;
+      padding: 14px;
+      background: linear-gradient(180deg, #fffdf9 0%, #fbf5eb 100%);
+      box-shadow: 0 8px 20px rgba(128, 85, 0, .08);
+      margin-bottom: 12px;
+    }
+    .category-mobile-card.inactive-card {
+      opacity: .78;
+      background: linear-gradient(180deg, #f8f6f1 0%, #f2ede5 100%);
+    }
+    .category-mobile-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .category-mobile-parent {
+      margin-top: 4px;
+      font-size: .8rem;
+      color: #8a7560;
+    }
+    .category-mobile-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .category-mobile-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex: 1 1 220px;
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.72);
+      border: 1px solid #eadcc4;
+    }
+    .category-mobile-label {
+      font-size: .84rem;
+      font-weight: 600;
+      color: #5c3c00;
+    }
     .category-tree { display: flex; flex-direction: column; gap: 10px; }
     .cat-node { border: 1px solid #ede4d4; border-radius: 10px; padding: 12px 16px; background: #fdf9f5; }
     .cat-node.inactive-node { opacity: .55; background: #f5f5f5; }
@@ -760,6 +833,45 @@ function aiGenerateDescription(name: string, category: string): string {
     .pager-btn.active { background:#805500; border-color:#805500; color:#fff; }
     .pager-btn:disabled { opacity:.45; cursor:not-allowed; }
     .pager-meta { text-align:center; font-size:.82rem; color:#8a7560; padding-bottom:12px; }
+
+    @media (max-width: 768px) {
+      .pm-header {
+        flex-direction: column;
+        gap: 12px;
+      }
+      .pm-tabs {
+        flex-wrap: wrap;
+      }
+      .pm-tabs button {
+        flex: 1 1 160px;
+      }
+      .categories-card {
+        padding: 16px;
+      }
+      .add-root-row,
+      .add-sub-row,
+      .controls-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .search-field,
+      .category-filter-field {
+        min-width: 0;
+        width: 100%;
+      }
+      .categories-mobile-list {
+        display: block;
+      }
+      .categories-desktop-table {
+        display: none;
+      }
+      .pager-row {
+        justify-content: flex-start;
+      }
+      .pager-meta {
+        text-align: left;
+      }
+    }
   `]
 })
 export class ProductManagementComponent implements OnInit {

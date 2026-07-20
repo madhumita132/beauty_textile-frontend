@@ -4,6 +4,8 @@ import {
 import { FormsModule } from '@angular/forms';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { InventoryService } from '../../../services/inventory.service';
 import { ToastService } from '../../../services/toast.service';
 import { CategoryService } from '../../../services/category.service';
@@ -375,21 +377,61 @@ type Tab = 'dashboard' | 'products' | 'lowstock' | 'adjust' | 'audit' | 'import'
           <button mat-icon-button (click)="barcodeProduct=null"><mat-icon>close</mat-icon></button>
         </div>
         <div class="barcode-display" id="barcode-print-area">
-          <div class="sticker-brand">Beauty Textile</div>
-          <div class="sticker-category">{{ categoryLabel(barcodeProduct.category) }}</div>
-          <img [src]="inventorySvc.getBarcodeImageUrl(barcodeProduct.barcode, 150, 34)"
-               [alt]="barcodeProduct.barcode" class="sticker-code" (load)="onBarcodeImageLoad()" />
-          <div class="sticker-barcode mono">{{ barcodeProduct.barcode }}</div>
-          @if (barcodeProduct.sku) {
-            <div class="sticker-sku">{{ barcodeProduct.sku }}</div>
-          }
-          <div class="sticker-price">₹{{ barcodeProduct.price }}</div>
+
+          <!-- ① Beauty Textile logo box (double-rule) -->
+          <div class="st-logo-outer">
+            <div class="st-logo-inner">
+              <div class="st-orn-row">
+                <span class="st-orn-line"></span>
+                <span class="st-orn">&#10023;</span>
+                <span class="st-brand">Beauty Textile</span>
+                <span class="st-orn">&#10023;</span>
+                <span class="st-orn-line"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ② Solid rule -->
+          <hr class="st-rule-solid">
+
+          <!-- ③ Product name (left) + Price (right) on same row -->
+          <div class="st-info-row">
+            <span class="st-prod-name">{{ barcodeProduct.name }}</span>
+            <span class="st-price">&#8377;{{ barcodeProduct.price | number:'1.0-0' }}</span>
+          </div>
+
+          <!-- ④ Barcode image + raw number only -->
+          <div class="st-bc-wrap">
+            <img [src]="inventorySvc.getBarcodeImageUrl(barcodeProduct.barcode, 200, 50)"
+                 [alt]="barcodeProduct.barcode" class="st-bc-img" (load)="onBarcodeImageLoad()" />
+            <div class="st-bc-num">{{ barcodeProduct.barcode }}</div>
+          </div>
+
         </div>
         <div class="form-actions">
           <button mat-raised-button class="btn-brown" (click)="printSelectedBarcode()">
             <mat-icon>print</mat-icon> Print Label
           </button>
         </div>
+        @if (showPrinterHint) {
+          <div class="printer-hint no-print">
+            <mat-icon>info</mat-icon>
+            <span>
+              <b>First time printing to the thermal/label printer?</b> "Save as PDF" always looks correct
+              because it accepts any size — a real printer only shows the right label size if its Windows
+              driver has a matching paper size. In the print dialog: pick the thermal printer under
+              <b>Destination</b>, open <b>More settings</b>, set <b>Paper size</b> to <b>50 &times; 30 mm</b>,
+              <b>Margins</b> to <b>None</b>, and turn <b>off Headers and footers</b>. If "50 x 30 mm" isn't in
+              the Paper size list, that printer's driver doesn't have it yet — add a custom paper size
+              (50mm &times; 30mm) to it from Windows: <i>Settings &rarr; Printers &amp; scanners &rarr; your
+              printer &rarr; Printing preferences &rarr; Advanced/Paper size &rarr; Custom</i>. Once added,
+              the browser remembers it for that printer going forward.
+            </span>
+            <button mat-icon-button (click)="dismissPrinterHint()" aria-label="Dismiss">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        }
       </div>
     }
 
@@ -625,8 +667,13 @@ type Tab = 'dashboard' | 'products' | 'lowstock' | 'adjust' | 'audit' | 'import'
             <div class="barcode-card" (click)="selectBarcodeProduct(p)">
               <div class="bc-brand">Beauty Textile</div>
               <div class="bc-name">{{ p.name }}</div>
-              <img [src]="inventorySvc.getBarcodeImageUrl(p.barcode, 200, 60)"
-                   [alt]="p.barcode" class="bc-img" loading="lazy" />
+              @if (p.barcode) {
+                <img [src]="inventorySvc.getBarcodeImageUrl(p.barcode, 200, 60)"
+                     [alt]="p.barcode" class="bc-img" loading="lazy" />
+              } @else {
+                <div class="bc-img bc-img-empty">Barcode missing</div>
+              }
+              <div class="bc-val mono">{{ p.barcode || 'No barcode' }}</div>
               <div class="bc-price bold">₹{{ p.price | number:'1.0-0' }}</div>
             </div>
           }
@@ -788,38 +835,150 @@ type Tab = 'dashboard' | 'products' | 'lowstock' | 'adjust' | 'audit' | 'import'
     .bc-name { font-weight: 600; font-size: .85rem; color: #2c1a00; }
     .bc-cat  { margin: 2px 0 3px; }
     .bc-img  { max-width: 100%; height: 40px; }
+    .bc-img-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px dashed #d7c6a6;
+      border-radius: 6px;
+      color: #8a7560;
+      font-size: .75rem;
+      background: #fdf9f5;
+    }
     .bc-val  { font-size: .72rem; margin-top: 2px; }
     .bc-price { color: #191817; font-size: .96rem; font-weight: 700; }
+    /* ── Thermal label screen preview (189×113 px = 50×30 mm proportions) ── */
     .barcode-panel .barcode-display {
-      width: 130px;
-      min-height: 70px;
+      width: 189px;
+      height: 113px;
       margin: 0 auto;
-      border: 1px solid #d9c8ad;
-      border-radius: 8px;
-      padding: 4px 5px;
+      border: 1.5px solid #000;
+      border-radius: 5px;
+      padding: 6px 8px 5px;
       background: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      box-shadow: 0 2px 10px rgba(0,0,0,.18);
+      overflow: hidden;
     }
-    .sticker-brand { text-align: center; font-size: 8px; font-weight: 700; color: #2c1a00; letter-spacing: .2px; }
-    .sticker-category { text-align: center; font-size: 6.5px; color: #666; margin-top: 1px; }
-    .sticker-code { display: block; margin: 3px auto 2px; width: 130px; height: 28px; }
-    .sticker-barcode { text-align: center; font-size: 7px; }
-    .sticker-sku { text-align: center; font-size: 6px; color: #777; margin-top: 1px; }
-    .sticker-price { text-align: center; font-size: 11px; font-weight: 800; color: #7a4f00; margin-top: 2px; }
+    /* Logo box */
+    .st-logo-outer {
+      border: 1.5px solid #000;
+      border-radius: 2px;
+      padding: 2px;
+      flex-shrink: 0;
+    }
+    .st-logo-inner {
+      border: 0.5px solid #000;
+      border-radius: 1px;
+      padding: 2px 5px 3px;
+    }
+    .st-orn-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .st-orn-line {
+      flex: 1;
+      height: 1px;
+      background: #000;
+    }
+    .st-orn {
+      color: #8B6914;
+      font-size: 10px;
+      line-height: 1;
+    }
+    .st-brand {
+      font: bold 10px Georgia, 'Times New Roman', serif;
+      letter-spacing: .8px;
+      color: #000;
+      white-space: nowrap;
+    }
+    /* Rules */
+    .st-rule-solid {
+      border: none;
+      border-top: 1px solid #000;
+      margin: 2px 0;
+      flex-shrink: 0;
+    }
+    /* Product name (left) + Price (right) — same row */
+    .st-info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      gap: 4px;
+    }
+    .st-prod-name {
+      font-size: 7px;
+      font-weight: 600;
+      color: #333;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+      flex: 1;
+    }
+    /* Price — large, right side */
+    .st-price {
+      font-size: 15px;
+      font-weight: 900;
+      color: #000;
+      white-space: nowrap;
+      line-height: 1.1;
+      flex-shrink: 0;
+    }
+    /* Barcode */
+    .st-bc-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .st-bc-img {
+      display: block;
+      width: 100%;
+      height: 30px;
+      object-fit: fill;
+    }
+    .st-bc-num {
+      font: normal 6.5px 'Courier New', Courier, monospace;
+      letter-spacing: .8px;
+      text-align: center;
+      color: #000;
+      margin-top: 1px;
+    }
 
     /* Print rules for the barcode sticker live in the global stylesheet (styles.scss)
        under #barcode-print-area, since Angular's emulated view encapsulation would
-       otherwise scope (and silently break) selectors like body-star written here. */
-    @media print {
-      @page {
-        size: 58mm auto;
-        margin: 2mm;
-      }
-    }
+       otherwise scope (and silently break) selectors like body-star written here.
+       The scoped @page bt-label (named page) also lives there so it doesn't force
+       every print job in the app (e.g. the Billing receipt) onto a 30mm page. */
 
     @media (max-width: 700px) {
       .inv-table th:nth-child(n+7) { display: none; }
       .inv-table td:nth-child(n+7) { display: none; }
     }
+
+    .printer-hint {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: #fff8e6;
+      border: 1px solid #f0d999;
+      border-radius: 6px;
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: #5a4a1a;
+    }
+    .printer-hint mat-icon:first-child { flex-shrink: 0; margin-top: 1px; color: #b8860b; }
+    .printer-hint span { flex: 1; }
+    .printer-hint button { flex-shrink: 0; width: 28px; height: 28px; line-height: 28px; }
+    .printer-hint button mat-icon { font-size: 18px; width: 18px; height: 18px; }
   `]
 })
 export class InventoryComponent implements OnInit {
@@ -854,6 +1013,7 @@ export class InventoryComponent implements OnInit {
   barcodeSearch = '';
   barcodePageProducts: Product[] = [];
   private barcodeSearchTimer: ReturnType<typeof setTimeout> | null = null;
+  showPrinterHint = localStorage.getItem('bt_label_printer_hint_dismissed') !== '1';
 
   // ── Stock adjustment ─────────────────────────────────────────────────────
   adjSearch = '';
@@ -1099,6 +1259,12 @@ export class InventoryComponent implements OnInit {
     this.pendingAutoPrint = true;
   }
 
+  dismissPrinterHint(): void {
+    this.showPrinterHint = false;
+    localStorage.setItem('bt_label_printer_hint_dismissed', '1');
+    this.cdr.markForCheck();
+  }
+
   /** Fires once the barcode <img> has actually rendered, so we never print a blank/half-loaded label. */
   onBarcodeImageLoad(): void {
     if (!this.pendingAutoPrint) return;
@@ -1108,9 +1274,55 @@ export class InventoryComponent implements OnInit {
 
   printSelectedBarcode(): void {
     if (!this.barcodeProduct) return;
-    window.requestAnimationFrame(() => {
-      setTimeout(() => globalThis.print(), 180);
-    });
+    const area = document.getElementById('barcode-print-area');
+    if (!area) return;
+
+    // Open a dedicated minimal window so @page size:50mm 30mm is top-level
+    // (nesting @page inside @media print is non-standard and ignored by Chrome)
+    const win = window.open('', '_blank', 'width=300,height=220,toolbar=0,menubar=0,status=0');
+    if (!win) { setTimeout(() => window.print(), 80); return; } // popup blocked: fallback
+
+    win.document.write(`<!DOCTYPE html><html><head>
+<meta charset="UTF-8"><title>Beauty Textile — Label</title>
+<style>
+@page { size: 50mm 30mm; margin: 0; }
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html,body { width:100%; height:100%; margin:0; padding:0; background:#fff; font-family:Arial,sans-serif; }
+#barcode-print-area {
+  position:absolute; top:0; left:0;
+  display:flex; flex-direction:column;
+  width:50mm; height:30mm;
+  padding:1.5mm 2mm 1.2mm;
+  border:0.3mm solid #000; background:#fff; overflow:hidden;
+}
+.st-logo-outer { border:0.4mm solid #000; border-radius:0.3mm; padding:0.4mm; flex-shrink:0; }
+.st-logo-inner { border:0.15mm solid #000; border-radius:0.2mm; padding:0.3mm 1.2mm 0.4mm; }
+.st-orn-row { display:flex; align-items:center; gap:0.8mm; }
+.st-orn-line { flex:1; height:0.2mm; background:#000; }
+.st-orn { color:#000; font-size:2.2mm; line-height:1; }
+.st-brand { font:bold 2.8mm Georgia,serif; letter-spacing:0.2mm; color:#000; white-space:nowrap; }
+.st-rule-solid { border:none; border-top:0.2mm solid #000; margin:0.6mm 0 0.4mm; flex-shrink:0; }
+.st-info-row { display:flex; justify-content:space-between; align-items:center; flex-shrink:0; gap:1mm; }
+.st-prod-name { font-size:1.9mm; font-weight:600; color:#000; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0; }
+.st-price { font-size:3.6mm; font-weight:900; color:#000; white-space:nowrap; flex-shrink:0; }
+.st-bc-wrap { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.st-bc-img { display:block; width:44mm; height:9mm; object-fit:fill; }
+.st-bc-num { font:normal 1.7mm "Courier New",Courier,monospace; letter-spacing:0.15mm; text-align:center; color:#000; margin-top:0.3mm; }
+</style>
+</head><body>${area.outerHTML}</body></html>`);
+
+    win.document.close();
+    win.focus();
+    // Wait for the barcode image before triggering print
+    const img = win.document.querySelector<HTMLImageElement>('.st-bc-img');
+    const doPrint = () => { win.print(); setTimeout(() => win.close(), 300); };
+    if (img && !img.complete) {
+      img.onload  = doPrint;
+      img.onerror = doPrint;
+      setTimeout(doPrint, 1500); // safety timeout
+    } else {
+      setTimeout(doPrint, 250);
+    }
   }
 
   onBarcodeSearch(): void {
@@ -1119,17 +1331,82 @@ export class InventoryComponent implements OnInit {
       this.barcodeSearchTimer = null;
     }
     const term = this.barcodeSearch.trim();
-    if (term.length < 2) {
+    if (!term) {
       this.barcodePageProducts = [];
       this.cdr.markForCheck();
       return;
     }
+
     this.barcodeSearchTimer = setTimeout(() => {
-      this.inventorySvc.searchProducts(term, 0, 24).subscribe({
-        next: r => { this.barcodePageProducts = r.content; this.cdr.markForCheck(); },
-        error: () => {}
+      const barcodeCandidates = this.barcodeSearchCandidates(term);
+      const exactLookups = barcodeCandidates.length
+        ? forkJoin(
+            barcodeCandidates.map(code =>
+              this.inventorySvc.getProductByBarcode(code).pipe(catchError(() => of(null)))
+            )
+          )
+        : of([]);
+
+      exactLookups.subscribe({
+        next: exactProducts => {
+          const directMatches = exactProducts.filter((product): product is Product => !!product?.barcode);
+
+          if (term.length < 2) {
+            this.barcodePageProducts = this.mergeBarcodeProducts(directMatches, []);
+            this.cdr.markForCheck();
+            return;
+          }
+
+          this.inventorySvc.searchProducts(term, 0, 24).subscribe({
+            next: r => {
+              this.barcodePageProducts = this.mergeBarcodeProducts(directMatches, r.content);
+              this.cdr.markForCheck();
+            },
+            error: () => {
+              this.barcodePageProducts = this.mergeBarcodeProducts(directMatches, []);
+              this.cdr.markForCheck();
+            }
+          });
+        },
+        error: () => {
+          this.barcodePageProducts = [];
+          this.cdr.markForCheck();
+        }
       });
     }, 260);
+  }
+
+  private barcodeSearchCandidates(term: string): string[] {
+    const raw = term.trim();
+    if (!raw) return [];
+
+    const candidates = new Set<string>();
+    candidates.add(raw);
+
+    const upper = raw.toUpperCase();
+    candidates.add(upper);
+
+    if (/^\d+$/.test(raw)) {
+      candidates.add(`BT${raw}`);
+      candidates.add(`BT${raw.padStart(4, '0')}`);
+    }
+
+    if (/^BT\d+$/i.test(raw)) {
+      candidates.add(upper);
+    }
+
+    return [...candidates];
+  }
+
+  private mergeBarcodeProducts(primary: Product[], secondary: Product[]): Product[] {
+    const merged = [...primary, ...secondary.filter(product => !!product.barcode)];
+    const seen = new Set<string>();
+    return merged.filter(product => {
+      const key = `${product.id}:${product.barcode}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   // ── Stock Adjust ──────────────────────────────────────────────────────────

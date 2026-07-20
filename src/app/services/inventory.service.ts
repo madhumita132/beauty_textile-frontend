@@ -27,6 +27,10 @@ export class InventoryService {
     return this.http.get<PagedResponse<Product>>(`${this.base}/products/search`, { params });
   }
 
+  getProductByBarcode(barcode: string): Observable<Product> {
+    return this.http.get<Product>(`${environment.apiUrl}/products/barcode/${encodeURIComponent(barcode)}`);
+  }
+
   listByCategory(category: string, page = 0, size = 50): Observable<PagedResponse<Product>> {
     const params = new HttpParams().set('page', page).set('size', size);
     return this.http.get<PagedResponse<Product>>(

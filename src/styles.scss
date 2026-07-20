@@ -125,20 +125,109 @@ tr:hover td { background: #f8f9fa; }
     z-index: 999999;
   }
   .print-receipt * { visibility: visible; }
+  /* ── Thermal label: show only the print area, full page ── */
   #barcode-print-area, #barcode-print-area * { visibility: visible; }
   #barcode-print-area {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column;
     position: fixed; left: 0; top: 0;
-    width: 45mm; min-height: auto; margin: 0; padding: 1.5mm;
-    border: 1px solid #000; border-radius: 0; box-shadow: none;
+    width: 50mm; height: 30mm;
+    margin: 0; padding: 1.6mm 2mm 1.4mm;
+    border: 0.3mm solid #000;
+    border-radius: 0; box-shadow: none;
     background: #fff; z-index: 999999;
+    overflow: hidden;
+    gap: 0;
   }
-  #barcode-print-area .sticker-brand { font-size: 8px; }
-  #barcode-print-area .sticker-category { font-size: 6.5px; }
-  #barcode-print-area .sticker-code { width: 100px; height: 24px; }
-  #barcode-print-area .sticker-barcode { font-size: 7px; }
-  #barcode-print-area .sticker-sku { font-size: 6px; }
-  #barcode-print-area .sticker-price { font-size: 11px; }
+  /* Logo box */
+  #barcode-print-area .st-logo-outer {
+    border: 0.4mm solid #000 !important;
+    border-radius: 0.3mm !important;
+    padding: 0.4mm !important;
+    flex-shrink: 0;
+  }
+  #barcode-print-area .st-logo-inner {
+    border: 0.15mm solid #000 !important;
+    border-radius: 0.2mm !important;
+    padding: 0.4mm 1.2mm 0.5mm !important;
+  }
+  #barcode-print-area .st-orn-row {
+    display: flex !important;
+    align-items: center;
+    gap: 0.8mm;
+  }
+  #barcode-print-area .st-orn-line {
+    flex: 1;
+    height: 0.2mm;
+    background: #000;
+  }
+  #barcode-print-area .st-orn {
+    color: #000 !important;   /* thermal: no grey */
+    font-size: 2.2mm;
+    line-height: 1;
+  }
+  #barcode-print-area .st-brand {
+    font: bold 2.8mm Georgia, 'Times New Roman', serif !important;
+    letter-spacing: 0.2mm;
+    color: #000;
+    white-space: nowrap;
+  }
+  /* Rules */
+  #barcode-print-area .st-rule-solid {
+    border: none !important;
+    border-top: 0.2mm solid #000 !important;
+    margin: 0.7mm 0 0.5mm !important;
+    flex-shrink: 0;
+  }
+  /* Product name + Price row (fallback if popup is blocked) */
+  #barcode-print-area .st-info-row {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 1mm;
+  }
+  #barcode-print-area .st-prod-name {
+    font-size: 1.9mm !important;
+    font-weight: 600;
+    color: #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+    line-height: 1.2;
+  }
+  /* Price — large right side */
+  #barcode-print-area .st-price {
+    font-size: 3.6mm !important;
+    font-weight: 900;
+    color: #000;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  /* Barcode number — not bold */
+  #barcode-print-area .st-bc-num {
+    font: normal 1.7mm 'Courier New', Courier, monospace !important;
+    letter-spacing: 0.15mm;
+    text-align: center;
+    color: #000;
+    margin-top: 0.3mm;
+  }
+  /* Barcode */
+  #barcode-print-area .st-bc-wrap {
+    flex: 1;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  #barcode-print-area .st-bc-img {
+    display: block;
+    width: 44mm !important;
+    height: 9.5mm !important;
+    object-fit: fill;
+  }
   .no-print { display: none !important; }
   .print-only {
     display: block !important;
@@ -152,7 +241,15 @@ tr:hover td { background: #f8f9fa; }
     z-index: 999999;
   }
   .print-only * { visibility: visible; }
-  @page { margin: 4mm; size: 58mm auto; }
+
+  /* Scope the 50x30mm physical page size to the barcode label only. Using an
+     unscoped `@page { size: 50mm 30mm }` here would force EVERY print job in the
+     app (including the 58mm receipt in Billing) onto a 30mm-tall page. Named
+     pages keep it isolated to #barcode-print-area's fallback print path (the
+     popup window used by printSelectedBarcode() sets its own top-level @page). */
+  #barcode-print-area { page: bt-label; }
+  @page bt-label { margin: 0; size: 50mm 30mm; }
+  @page { margin: 0; }
 }
 
 @media (min-width: 768px) {
