@@ -378,31 +378,18 @@ type Tab = 'dashboard' | 'products' | 'lowstock' | 'adjust' | 'audit' | 'import'
         </div>
         <div class="barcode-display" id="barcode-print-area">
 
-          <!-- ① Beauty Textile logo box (double-rule) -->
-          <div class="st-logo-outer">
-            <div class="st-logo-inner">
-              <div class="st-orn-row">
-                <span class="st-orn-line"></span>
-                <span class="st-orn">&#10023;</span>
-                <span class="st-brand">Beauty Textile</span>
-                <span class="st-orn">&#10023;</span>
-                <span class="st-orn-line"></span>
-              </div>
-            </div>
-          </div>
+          <!-- ① Brand header -->
+          <div class="st-brand-header">BEAUTY TEXTILE</div>
 
-          <!-- ② Solid rule -->
-          <hr class="st-rule-solid">
-
-          <!-- ③ Product name (left) + Price (right) on same row -->
+          <!-- ② Product name (left) + Price (right) on same row -->
           <div class="st-info-row">
             <span class="st-prod-name">{{ barcodeProduct.name }}</span>
             <span class="st-price">&#8377;{{ barcodeProduct.price | number:'1.0-0' }}</span>
           </div>
 
-          <!-- ④ Barcode image + raw number only -->
+          <!-- ③ Barcode image + raw number -->
           <div class="st-bc-wrap">
-            <img [src]="inventorySvc.getBarcodeImageUrl(barcodeProduct.barcode, 200, 50)"
+            <img [src]="inventorySvc.getBarcodeImageUrl(barcodeProduct.barcode, 400, 80)"
                  [alt]="barcodeProduct.barcode" class="st-bc-img" (load)="onBarcodeImageLoad()" />
             <div class="st-bc-num">{{ barcodeProduct.barcode }}</div>
           </div>
@@ -847,60 +834,30 @@ type Tab = 'dashboard' | 'products' | 'lowstock' | 'adjust' | 'audit' | 'import'
     }
     .bc-val  { font-size: .72rem; margin-top: 2px; }
     .bc-price { color: #191817; font-size: .96rem; font-weight: 700; }
-    /* ── Thermal label screen preview (189×113 px = 50×30 mm proportions) ── */
+    /* ── Thermal label screen preview (2× scale of 50×30 mm) ── */
     .barcode-panel .barcode-display {
-      width: 189px;
-      height: 113px;
+      width: 378px;
+      height: 227px;
       margin: 0 auto;
       border: 1.5px solid #000;
-      border-radius: 5px;
-      padding: 6px 8px 5px;
+      border-radius: 4px;
+      padding: 12px 14px 10px;
       background: #fff;
       display: flex;
       flex-direction: column;
-      gap: 0;
+      gap: 6px;
       box-shadow: 0 2px 10px rgba(0,0,0,.18);
       overflow: hidden;
     }
-    /* Logo box */
-    .st-logo-outer {
-      border: 1.5px solid #000;
-      border-radius: 2px;
-      padding: 2px;
-      flex-shrink: 0;
-    }
-    .st-logo-inner {
-      border: 0.5px solid #000;
-      border-radius: 1px;
-      padding: 2px 5px 3px;
-    }
-    .st-orn-row {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .st-orn-line {
-      flex: 1;
-      height: 1px;
-      background: #000;
-    }
-    .st-orn {
-      color: #8B6914;
-      font-size: 10px;
-      line-height: 1;
-    }
-    .st-brand {
-      font: bold 10px Georgia, 'Times New Roman', serif;
-      letter-spacing: .8px;
+    /* Brand header */
+    .st-brand-header {
+      font: bold 18px Arial, sans-serif;
+      text-align: center;
       color: #000;
-      white-space: nowrap;
-    }
-    /* Rules */
-    .st-rule-solid {
-      border: none;
-      border-top: 1px solid #000;
-      margin: 2px 0;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
       flex-shrink: 0;
+      line-height: 1.1;
     }
     /* Product name (left) + Price (right) — same row */
     .st-info-row {
@@ -908,10 +865,10 @@ type Tab = 'dashboard' | 'products' | 'lowstock' | 'adjust' | 'audit' | 'import'
       justify-content: space-between;
       align-items: center;
       flex-shrink: 0;
-      gap: 4px;
+      gap: 6px;
     }
     .st-prod-name {
-      font-size: 7px;
+      font-size: 12px;
       font-weight: 600;
       color: #333;
       white-space: nowrap;
@@ -922,7 +879,7 @@ type Tab = 'dashboard' | 'products' | 'lowstock' | 'adjust' | 'audit' | 'import'
     }
     /* Price — large, right side */
     .st-price {
-      font-size: 15px;
+      font-size: 20px;
       font-weight: 900;
       color: #000;
       white-space: nowrap;
@@ -939,16 +896,17 @@ type Tab = 'dashboard' | 'products' | 'lowstock' | 'adjust' | 'audit' | 'import'
     }
     .st-bc-img {
       display: block;
-      width: 100%;
-      height: 30px;
+      width: 90%;
+      height: auto;
+      max-height: 110px;
       object-fit: fill;
     }
     .st-bc-num {
-      font: normal 6.5px 'Courier New', Courier, monospace;
-      letter-spacing: .8px;
+      font: normal 10px 'Courier New', Courier, monospace;
+      letter-spacing: 1px;
       text-align: center;
       color: #000;
-      margin-top: 1px;
+      margin-top: 3px;
     }
 
     /* Print rules for the barcode sticker live in the global stylesheet (styles.scss)
@@ -1279,35 +1237,83 @@ export class InventoryComponent implements OnInit {
 
     // Open a dedicated minimal window so @page size:50mm 30mm is top-level
     // (nesting @page inside @media print is non-standard and ignored by Chrome)
-    const win = window.open('', '_blank', 'width=300,height=220,toolbar=0,menubar=0,status=0');
+    const win = window.open('', '_blank', 'width=600,height=500,toolbar=0,menubar=0,status=0,scrollbars=0');
     if (!win) { setTimeout(() => window.print(), 80); return; } // popup blocked: fallback
 
     win.document.write(`<!DOCTYPE html><html><head>
-<meta charset="UTF-8"><title>Beauty Textile — Label</title>
+<meta charset="UTF-8"><title>Beauty Textile \u2014 Label</title>
 <style>
 @page { size: 50mm 30mm; margin: 0; }
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
-html,body { width:100%; height:100%; margin:0; padding:0; background:#fff; font-family:Arial,sans-serif; }
-#barcode-print-area {
-  position:absolute; top:0; left:0;
-  display:flex; flex-direction:column;
-  width:50mm; height:30mm;
-  padding:1.5mm 2mm 1.2mm;
-  border:0.3mm solid #000; background:#fff; overflow:hidden;
+html, body {
+  width: 50mm; height: 30mm;
+  margin: 0; padding: 0;
+  background: #fff;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
 }
-.st-logo-outer { border:0.4mm solid #000; border-radius:0.3mm; padding:0.4mm; flex-shrink:0; }
-.st-logo-inner { border:0.15mm solid #000; border-radius:0.2mm; padding:0.3mm 1.2mm 0.4mm; }
-.st-orn-row { display:flex; align-items:center; gap:0.8mm; }
-.st-orn-line { flex:1; height:0.2mm; background:#000; }
-.st-orn { color:#000; font-size:2.2mm; line-height:1; }
-.st-brand { font:bold 2.8mm Georgia,serif; letter-spacing:0.2mm; color:#000; white-space:nowrap; }
-.st-rule-solid { border:none; border-top:0.2mm solid #000; margin:0.6mm 0 0.4mm; flex-shrink:0; }
-.st-info-row { display:flex; justify-content:space-between; align-items:center; flex-shrink:0; gap:1mm; }
-.st-prod-name { font-size:1.9mm; font-weight:600; color:#000; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0; }
-.st-price { font-size:3.6mm; font-weight:900; color:#000; white-space:nowrap; flex-shrink:0; }
-.st-bc-wrap { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-.st-bc-img { display:block; width:44mm; height:9mm; object-fit:fill; }
-.st-bc-num { font:normal 1.7mm "Courier New",Courier,monospace; letter-spacing:0.15mm; text-align:center; color:#000; margin-top:0.3mm; }
+#barcode-print-area {
+  display: flex;
+  flex-direction: column;
+  width: 50mm;
+  height: 30mm;
+  padding: 1.5mm 2mm 1mm 2mm;
+  background: #fff;
+  overflow: hidden;
+  gap: 0.8mm;
+}
+.st-brand-header {
+  font: bold 4mm Arial, sans-serif;
+  text-align: center;
+  color: #000;
+  letter-spacing: 0.4mm;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  line-height: 1.1;
+}
+.st-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 1mm;
+}
+.st-prod-name {
+  font: 600 2.4mm Arial, sans-serif;
+  color: #000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.2;
+}
+.st-price {
+  font: 900 3.8mm Arial, sans-serif;
+  color: #000;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.st-bc-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.st-bc-img {
+  display: block;
+  width: 42mm;
+  height: 11mm;
+  object-fit: fill;
+}
+.st-bc-num {
+  font: normal 2mm "Courier New", Courier, monospace;
+  letter-spacing: 0.2mm;
+  text-align: center;
+  color: #000;
+  margin-top: 0.5mm;
+}
 </style>
 </head><body>${area.outerHTML}</body></html>`);
 
@@ -1380,19 +1386,20 @@ html,body { width:100%; height:100%; margin:0; padding:0; background:#fff; font-
     const raw = term.trim();
     if (!raw) return [];
 
-    const candidates = new Set<string>();
-    candidates.add(raw);
+    // Only fire exact-match /products/barcode/{code} lookups when the term actually
+    // looks like a barcode (all digits, or BT-prefixed digits). Otherwise a plain
+    // name search (e.g. "kurthi") was firing 2+ wasted parallel 404 lookups on every
+    // keystroke alongside the real search call, adding avoidable load/latency.
+    const looksLikeBarcode = /^\d+$/.test(raw) || /^BT\d+$/i.test(raw);
+    if (!looksLikeBarcode) return [];
 
+    const candidates = new Set<string>();
     const upper = raw.toUpperCase();
     candidates.add(upper);
 
     if (/^\d+$/.test(raw)) {
       candidates.add(`BT${raw}`);
       candidates.add(`BT${raw.padStart(4, '0')}`);
-    }
-
-    if (/^BT\d+$/i.test(raw)) {
-      candidates.add(upper);
     }
 
     return [...candidates];

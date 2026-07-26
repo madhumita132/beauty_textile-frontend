@@ -117,7 +117,7 @@ tr:hover td { background: #f8f9fa; }
     visibility: visible;
     position: fixed;
     left: 0; top: 0;
-    width: 58mm;
+    width: 48mm;
     font-size: 11px;
     font-family: 'Courier New', monospace;
     color: #000;
@@ -125,61 +125,31 @@ tr:hover td { background: #f8f9fa; }
     z-index: 999999;
   }
   .print-receipt * { visibility: visible; }
-  /* ── Thermal label: show only the print area, full page ── */
+  /* ── Thermal label: show only the print area, full page (popup-blocked fallback) ── */
   #barcode-print-area, #barcode-print-area * { visibility: visible; }
   #barcode-print-area {
     display: flex !important;
     flex-direction: column;
     position: fixed; left: 0; top: 0;
     width: 50mm; height: 30mm;
-    margin: 0; padding: 1.6mm 2mm 1.4mm;
-    border: 0.3mm solid #000;
+    margin: 0; padding: 1.5mm 2mm 1mm;
+    border: none;
     border-radius: 0; box-shadow: none;
     background: #fff; z-index: 999999;
     overflow: hidden;
-    gap: 0;
-  }
-  /* Logo box */
-  #barcode-print-area .st-logo-outer {
-    border: 0.4mm solid #000 !important;
-    border-radius: 0.3mm !important;
-    padding: 0.4mm !important;
-    flex-shrink: 0;
-  }
-  #barcode-print-area .st-logo-inner {
-    border: 0.15mm solid #000 !important;
-    border-radius: 0.2mm !important;
-    padding: 0.4mm 1.2mm 0.5mm !important;
-  }
-  #barcode-print-area .st-orn-row {
-    display: flex !important;
-    align-items: center;
     gap: 0.8mm;
   }
-  #barcode-print-area .st-orn-line {
-    flex: 1;
-    height: 0.2mm;
-    background: #000;
-  }
-  #barcode-print-area .st-orn {
-    color: #000 !important;   /* thermal: no grey */
-    font-size: 2.2mm;
-    line-height: 1;
-  }
-  #barcode-print-area .st-brand {
-    font: bold 2.8mm Georgia, 'Times New Roman', serif !important;
-    letter-spacing: 0.2mm;
+  /* Brand header */
+  #barcode-print-area .st-brand-header {
+    font: bold 4mm Arial, sans-serif !important;
+    text-align: center;
     color: #000;
-    white-space: nowrap;
-  }
-  /* Rules */
-  #barcode-print-area .st-rule-solid {
-    border: none !important;
-    border-top: 0.2mm solid #000 !important;
-    margin: 0.7mm 0 0.5mm !important;
+    letter-spacing: 0.4mm;
+    text-transform: uppercase;
     flex-shrink: 0;
+    line-height: 1.1;
   }
-  /* Product name + Price row (fallback if popup is blocked) */
+  /* Product name + Price row */
   #barcode-print-area .st-info-row {
     display: flex !important;
     justify-content: space-between;
@@ -188,8 +158,7 @@ tr:hover td { background: #f8f9fa; }
     gap: 1mm;
   }
   #barcode-print-area .st-prod-name {
-    font-size: 1.9mm !important;
-    font-weight: 600;
+    font: 600 2.4mm Arial, sans-serif !important;
     color: #000;
     white-space: nowrap;
     overflow: hidden;
@@ -200,19 +169,10 @@ tr:hover td { background: #f8f9fa; }
   }
   /* Price — large right side */
   #barcode-print-area .st-price {
-    font-size: 3.6mm !important;
-    font-weight: 900;
+    font: 900 3.8mm Arial, sans-serif !important;
     color: #000;
     white-space: nowrap;
     flex-shrink: 0;
-  }
-  /* Barcode number — not bold */
-  #barcode-print-area .st-bc-num {
-    font: normal 1.7mm 'Courier New', Courier, monospace !important;
-    letter-spacing: 0.15mm;
-    text-align: center;
-    color: #000;
-    margin-top: 0.3mm;
   }
   /* Barcode */
   #barcode-print-area .st-bc-wrap {
@@ -224,9 +184,17 @@ tr:hover td { background: #f8f9fa; }
   }
   #barcode-print-area .st-bc-img {
     display: block;
-    width: 44mm !important;
-    height: 9.5mm !important;
+    width: 42mm !important;
+    height: 11mm !important;
     object-fit: fill;
+  }
+  /* Barcode number */
+  #barcode-print-area .st-bc-num {
+    font: normal 2mm 'Courier New', Courier, monospace !important;
+    letter-spacing: 0.2mm;
+    text-align: center;
+    color: #000;
+    margin-top: 0.5mm;
   }
   .no-print { display: none !important; }
   .print-only {

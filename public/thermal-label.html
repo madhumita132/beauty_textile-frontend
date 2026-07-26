@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BT Thermal Label — Beauty Textile</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #c8c8c8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      padding: 30px 16px;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .page-header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #222;
+      letter-spacing: 1px;
+    }
+    .page-header p {
+      font-size: 12px;
+      color: #555;
+      margin-top: 4px;
+    }
+
+    /* ── Label card ── */
+    .label-card {
+      background: #fff;
+      box-shadow: 0 6px 28px rgba(0,0,0,.35);
+      border-radius: 3px;
+      overflow: hidden;
+      /* 50 × 30 mm at 96 dpi → 189 × 113 px. Rendered at 3× for screen preview */
+      width: 567px;   /* 189 × 3 */
+      height: 340px;  /* 113 × 3 */
+      position: relative;
+    }
+
+    canvas#lbl { display: block; }
+
+    /* ── Controls ── */
+    .controls {
+      margin-top: 22px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .btn {
+      padding: 9px 22px;
+      border: 2px solid #222;
+      background: #fff;
+      color: #222;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .5px;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: background .15s, color .15s;
+    }
+    .btn:hover  { background: #222; color: #fff; }
+    .btn.primary { background: #222; color: #fff; }
+    .btn.primary:hover { background: #444; }
+
+    .spec-row {
+      margin-top: 18px;
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .spec-chip {
+      font-size: 11px;
+      color: #555;
+      background: #efefef;
+      border-radius: 20px;
+      padding: 4px 12px;
+      border: 1px solid #ddd;
+    }
+
+    /* ── Print ── */
+    @media print {
+      body       { background: #fff; padding: 0; justify-content: flex-start; }
+      .page-header, .controls, .spec-row { display: none !important; }
+      .label-card {
+        box-shadow: none;
+        border-radius: 0;
+        /* Exact physical size: 50mm × 30mm */
+        width:  50mm !important;
+        height: 30mm !important;
+      }
+      canvas#lbl { width: 50mm !important; height: 30mm !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>BEAUTY TEXTILE — Thermal Label Preview</h1>
+  <p>50 mm × 30 mm &nbsp;|&nbsp; PeriPeri BT-58L Compatible &nbsp;|&nbsp; Black &amp; White Thermal</p>
+</div>
+
+<div class="label-card">
+  <canvas id="lbl" width="567" height="340"></canvas>
+</div>
+
+<div class="controls">
+  <button class="btn primary" onclick="window.print()">&#128438; Print Label</button>
+  <button class="btn"         onclick="downloadPNG()">&#11015; Download PNG</button>
+</div>
+
+<div class="spec-row">
+  <span class="spec-chip">50 × 30 mm</span>
+  <span class="spec-chip">300 DPI Ready</span>
+  <span class="spec-chip">EAN-13 Barcode</span>
+  <span class="spec-chip">Thermal B&amp;W</span>
+  <span class="spec-chip">PeriPeri BT-58L</span>
+</div>
+
+<script>
+/* ────────────────────────────────────────────────
+   EAN-13 encoder
+──────────────────────────────────────────────── */
+const EAN13 = {
+  L: ['0001101','0011001','0010011','0111101','0100011',
+      '0110001','0101111','0111011','0110111','0001011'],
+  G: ['0100111','0110011','0011011','0100001','0011101',
+      '0111001','0000101','0010001','0001001','0010111'],
+  R: ['1110010','1100110','1101100','1000010','1011100',
+      '1001110','1010000','1000100','1001000','1110100'],
+  PARITY: ['LLLLLL','LLGLGG','LLGGLG','LLGGGL','LGLLGG',
+           'LGGLLG','LGGGLL','LGLGLG','LGLGGL','LGGLGL']
+};
+
+function encodeEAN13(code) {
+  const d = code.split('').map(Number);
+  const parity = EAN13.PARITY[d[0]];
+  let bits = '101'; // start guard
+  for (let i = 0; i < 6; i++)
+    bits += (parity[i] === 'L' ? EAN13.L : EAN13.G)[d[i + 1]];
+  bits += '01010'; // centre guard
+  for (let i = 6; i < 12; i++)
+    bits += EAN13.R[d[i + 1]];
+  bits += '101'; // end guard
+  return bits;
+}
+
+/* ────────────────────────────────────────────────
+   Spaced text helper (letter-spacing on canvas)
+──────────────────────────────────────────────── */
+function fillTrackedText(ctx, text, cx, y, spacing) {
+  ctx.save();
+  ctx.textAlign = 'left';
+  const chars  = text.split('');
+  const widths = chars.map(c => ctx.measureText(c).width);
+  const total  = widths.reduce((a, b) => a + b, 0) + spacing * (chars.length - 1);
+  let x = cx - total / 2;
+  chars.forEach((ch, i) => {
+    ctx.fillText(ch, x, y);
+    x += widths[i] + spacing;
+  });
+  ctx.restore();
+}
+
+/* ────────────────────────────────────────────────
+   Main draw
+──────────────────────────────────────────────── */
+function drawLabel() {
+  const canvas = document.getElementById('lbl');
+  const ctx    = canvas.getContext('2d');
+  const W = canvas.width;   // 567
+  const H = canvas.height;  // 340
+
+  /* White fill + outer border */
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, W - 2, H - 2);
+
+  /* Inner margin guides (invisible — just tracking y) */
+  const PAD = 18;
+  let y = PAD;
+
+  /* ── BT LOGO BOX ── */
+  const boxW = 114, boxH = 66;
+  const boxX = (W - boxW) / 2;
+  const boxY = y;
+
+  // Double-rule frame for elegance
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 2.2;
+  ctx.strokeRect(boxX, boxY, boxW, boxH);
+  ctx.lineWidth = 0.8;
+  ctx.strokeRect(boxX + 4, boxY + 4, boxW - 8, boxH - 8);
+
+  // "BT" serif text
+  ctx.fillStyle = '#000';
+  ctx.font = 'bold 46px Georgia, "Times New Roman", serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('BT', W / 2, boxY + boxH / 2);
+
+  y = boxY + boxH + 10;
+
+  /* ── BRAND NAME ── */
+  ctx.fillStyle = '#000';
+  ctx.font = 'bold 26px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  fillTrackedText(ctx, 'BEAUTY TEXTILE', W / 2, y + 22, 3.2);
+
+  y += 32;
+
+  /* ── FULL-WIDTH HAIRLINE ── */
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(PAD, y); ctx.lineTo(W - PAD, y);
+  ctx.stroke();
+
+  y += 12;
+
+  /* ── PRODUCT NAME ── */
+  ctx.fillStyle = '#000';
+  ctx.font = '19px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('Floral Print Saree', W / 2, y + 16);
+
+  y += 30;
+
+  /* ── PRICE ── */
+  ctx.fillStyle = '#000';
+  ctx.font = 'bold 40px Arial Black, Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('\u20B91,999', W / 2, y + 34);
+
+  y += 50;
+
+  /* ── HAIRLINE ── */
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(PAD, y); ctx.lineTo(W - PAD, y);
+  ctx.stroke();
+
+  y += 8;
+
+  /* ── EAN-13 BARCODE ── */
+  const barcodeStr = '8906123456789';
+  const bits       = encodeEAN13(barcodeStr);
+  const bcW        = W - PAD * 2;          // usable width
+  const bcX        = PAD;
+  const bcH        = 70;
+  const barW       = bcW / bits.length;
+
+  // Guard bars slightly taller for authentic look
+  const guardSet = new Set();
+  // start guard  : bits 0-2
+  // centre guard : bits 27-31 (3 + 6*7 = 45? let me recalculate)
+  // EAN-13: 3 + 42 + 5 + 42 + 3 = 95 bits total
+  const guardExtend = 5;
+
+  for (let i = 0; i < bits.length; i++) {
+    if (bits[i] === '1') {
+      // taller bars for start/centre/end guards
+      const isGuard = (i < 3) || (i >= 45 && i <= 49) || (i >= 92);
+      const h = isGuard ? bcH + guardExtend : bcH;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(bcX + i * barW, y, barW + 0.3, h);
+    }
+  }
+
+  y += bcH + guardExtend + 5;
+
+  /* ── BARCODE DIGITS ── */
+  ctx.fillStyle = '#000';
+  ctx.font = '13px "Courier New", Courier, monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+
+  // Split digits: first-digit | left-6 | right-6 (EAN-13 style)
+  const d = barcodeStr;
+  const firstDigit = d[0];
+  const leftGrp    = d.slice(1, 7);
+  const rightGrp   = d.slice(7, 13);
+
+  const numY = y + 11;
+  ctx.fillText(firstDigit, bcX - 2,          numY); // before start guard
+  ctx.fillText(leftGrp,   W / 2 - 56,         numY); // under left bars
+  ctx.fillText(rightGrp,  W / 2 + 56,         numY); // under right bars
+}
+
+/* ────────────────────────────────────────────────
+   PNG download
+──────────────────────────────────────────────── */
+function downloadPNG() {
+  const canvas = document.getElementById('lbl');
+  const a = document.createElement('a');
+  a.download = 'BT_thermal_label_50x30mm.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+drawLabel();
+</script>
+</body>
+</html>
