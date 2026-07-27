@@ -72,6 +72,25 @@
     .btn.primary { background: #222; color: #fff; }
     .btn.primary:hover { background: #444; }
 
+    .orientation-selector {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    .btn.secondary {
+      padding: 7px 16px;
+      font-size: 12px;
+      background: #f5f5f5;
+      border-color: #aaa;
+      color: #333;
+    }
+    .btn.secondary.active {
+      background: #222;
+      color: #fff;
+      border-color: #222;
+    }
+
     .spec-row {
       margin-top: 18px;
       display: flex;
@@ -97,20 +116,20 @@
 
     @media print {
       html {
-        width: 50mm;
-        height: 30mm;
+        width: 100%;
+        height: 100%;
       }
       body {
         background: #fff;
         padding: 0;
         margin: 0;
-        width: 50mm;
-        height: 30mm;
+        width: 100%;
+        height: 100%;
         min-height: unset;
         display: block;
         overflow: hidden;
       }
-      .page-header, .controls, .spec-row { display: none !important; }
+      .page-header, .controls, .spec-row, .orientation-selector { display: none !important; }
       .label-card {
         box-shadow: none;
         border-radius: 0;
@@ -119,17 +138,17 @@
         position: fixed;
         top: 0;
         left: 0;
-        /* Exact physical size — fills the entire 50×30 mm page */
-        width:  50mm !important;
-        height: 30mm !important;
+        /* Exact physical size — fills the entire page */
+        width:  100% !important;
+        height: 100% !important;
         page-break-after: avoid;
         page-break-inside: avoid;
         break-after: avoid;
       }
       canvas#lbl {
         display: block;
-        width:  50mm !important;
-        height: 30mm !important;
+        width:  100% !important;
+        height: 100% !important;
       }
     }
   </style>
@@ -138,7 +157,12 @@
 
 <div class="page-header">
   <h1>BEAUTY TEXTILE — Thermal Label Preview</h1>
-  <p>50 mm × 30 mm &nbsp;|&nbsp; PeriPeri BT-58L Compatible &nbsp;|&nbsp; Black &amp; White Thermal</p>
+  <p id="size-info">50 mm × 30 mm &nbsp;|&nbsp; PeriPeri BT-58L Compatible &nbsp;|&nbsp; Black &amp; White Thermal</p>
+  
+  <div class="orientation-selector">
+    <button class="btn secondary active" onclick="setOrientation('landscape')" id="btn-landscape">⬌ Landscape (50 × 30 mm)</button>
+    <button class="btn secondary" onclick="setOrientation('portrait')" id="btn-portrait">⬍ Portrait (30 × 50 mm)</button>
+  </div>
 </div>
 
 <div class="label-card">
@@ -201,6 +225,46 @@ function fillTrackedText(ctx, text, cx, y, spacing) {
     x += widths[i] + spacing;
   });
   ctx.restore();
+}
+
+/* ────────────────────────────────────────────────
+   Orientation state & controls
+──────────────────────────────────────────────── */
+let currentOrientation = 'landscape'; // 'landscape' or 'portrait'
+
+function setOrientation(orientation) {
+  currentOrientation = orientation;
+  const canvas = document.getElementById('lbl');
+  const card = document.querySelector('.label-card');
+  const sizeInfo = document.getElementById('size-info');
+  const btnLandscape = document.getElementById('btn-landscape');
+  const btnPortrait = document.getElementById('btn-portrait');
+  
+  if (orientation === 'landscape') {
+    // 50mm × 30mm → 567 × 340 px (at 3× scale)
+    canvas.width = 567;
+    canvas.height = 340;
+    card.style.width = '567px';
+    card.style.height = '340px';
+    sizeInfo.textContent = '50 mm × 30 mm (Landscape) | PeriPeri BT-58L Compatible | Black & White Thermal';
+    btnLandscape.classList.add('active');
+    btnPortrait.classList.remove('active');
+    // Update CSS page size via style tag
+    document.styleSheets[0].insertRule(`@page { size: 50mm 30mm; }`, document.styleSheets[0].cssRules.length);
+  } else {
+    // 30mm × 50mm → 340 × 567 px (at 3× scale)
+    canvas.width = 340;
+    canvas.height = 567;
+    card.style.width = '340px';
+    card.style.height = '567px';
+    sizeInfo.textContent = '30 mm × 50 mm (Portrait) | PeriPeri BT-58L Compatible | Black & White Thermal';
+    btnPortrait.classList.add('active');
+    btnLandscape.classList.remove('active');
+    // Update CSS page size via style tag
+    document.styleSheets[0].insertRule(`@page { size: 30mm 50mm; }`, document.styleSheets[0].cssRules.length);
+  }
+  
+  drawLabel();
 }
 
 /* ────────────────────────────────────────────────
