@@ -399,20 +399,30 @@ type Tab = 'dashboard' | 'products' | 'lowstock' | 'adjust' | 'audit' | 'import'
           <button mat-raised-button class="btn-brown" (click)="printSelectedBarcode()">
             <mat-icon>print</mat-icon> Print Label
           </button>
+          <button mat-icon-button (click)="showPrinterHint = true" matTooltip="Printer setup help">
+            <mat-icon>help_outline</mat-icon>
+          </button>
         </div>
         @if (showPrinterHint) {
           <div class="printer-hint no-print">
             <mat-icon>info</mat-icon>
             <span>
-              <b>First time printing to the thermal/label printer?</b> "Save as PDF" always looks correct
-              because it accepts any size — a real printer only shows the right label size if its Windows
-              driver has a matching paper size. In the print dialog: pick the thermal printer under
-              <b>Destination</b>, open <b>More settings</b>, set <b>Paper size</b> to <b>50 &times; 30 mm</b>,
-              <b>Margins</b> to <b>None</b>, and turn <b>off Headers and footers</b>. If "50 x 30 mm" isn't in
-              the Paper size list, that printer's driver doesn't have it yet — add a custom paper size
-              (50mm &times; 30mm) to it from Windows: <i>Settings &rarr; Printers &amp; scanners &rarr; your
-              printer &rarr; Printing preferences &rarr; Advanced/Paper size &rarr; Custom</i>. Once added,
-              the browser remembers it for that printer going forward.
+              <b>Getting a tiny label on a big blank page, or 2 labels printing at once?</b> That happens when
+              the print dialog's <b>Paper size</b> isn't set to your printer's registered 50×30mm label — it
+              falls back to Letter/A4, so the label prints as a small stamp in the corner. Fix it every time:
+              in the print dialog pick your <b>PeriPeri / BT-58L</b> printer under <b>Destination</b>, open
+              <b>More settings</b>, set <b>Paper size</b> to <b>50 &times; 30 mm</b> (the custom size already
+              registered in your printer driver), set <b>Margins</b> to <b>None</b>, and turn <b>off Headers
+              and footers</b>.
+              <br><br>
+              <b>Important — keep Layout as "Portrait":</b> do <u>not</u> switch the browser's Layout to
+              Landscape. Your BT-58L driver's own Page Set already has <b>Rotate: Landscape</b> built in, so
+              selecting Landscape again in the browser rotates it a second time and causes <b>2 labels</b> to
+              print for one job. Leave the browser on Portrait — the printer driver handles the rotation.
+              <br><br>
+              If "50 x 30 mm" isn't in the Paper size list yet, add it once from Windows:
+              <i>Settings &rarr; Printers &amp; scanners &rarr; your printer &rarr; Printing preferences &rarr;
+              Page Set &rarr; New Paper</i> (name it 50mm x 30mm). The browser remembers it after that.
             </span>
             <button mat-icon-button (click)="dismissPrinterHint()" aria-label="Dismiss">
               <mat-icon>close</mat-icon>
@@ -1249,7 +1259,7 @@ html, body {
   width: 50mm; height: 30mm;
   margin: 0; padding: 0;
   background: #fff;
-  overflow: hidden;
+  overflow: visible;
   font-family: Arial, sans-serif;
 }
 #barcode-print-area {
@@ -1314,8 +1324,30 @@ html, body {
   color: #000;
   margin-top: 0.5mm;
 }
+/* On-screen-only reminder shown right when the print dialog is about to open.
+   Hidden automatically when actually printing (@media print below). */
+.setup-banner {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: #1c1c1c;
+  color: #fff;
+  font: 12px/1.6 Arial, sans-serif;
+  padding: 10px 14px;
+  z-index: 999999;
+}
+.setup-banner b { color: #ffd479; }
+@media print {
+  .setup-banner { display: none !important; }
+}
 </style>
-</head><body>${area.outerHTML}</body></html>`);
+</head><body>${area.outerHTML}
+<div class="setup-banner">
+  <b>Before pressing Print:</b> Destination → your PeriPeri/BT-58L printer &nbsp;•&nbsp;
+  More settings → Paper size → <b>50 x 30 mm</b> &nbsp;•&nbsp; Margins → <b>None</b> &nbsp;•&nbsp;
+  Layout → <b>Portrait</b> (do NOT pick Landscape — the printer driver already rotates it; picking
+  Landscape here too causes 2 labels to print).
+</div>
+</body></html>`);
 
     win.document.close();
     win.focus();

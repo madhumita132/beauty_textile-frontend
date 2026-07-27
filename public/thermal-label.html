@@ -89,17 +89,48 @@
     }
 
     /* ── Print ── */
+    @page {
+      /* Tell the browser/driver the exact label size — no margins */
+      size: 50mm 30mm;
+      margin: 0;
+    }
+
     @media print {
-      body       { background: #fff; padding: 0; justify-content: flex-start; }
+      html {
+        width: 50mm;
+        height: 30mm;
+      }
+      body {
+        background: #fff;
+        padding: 0;
+        margin: 0;
+        width: 50mm;
+        height: 30mm;
+        min-height: unset;
+        display: block;
+        overflow: hidden;
+      }
       .page-header, .controls, .spec-row { display: none !important; }
       .label-card {
         box-shadow: none;
         border-radius: 0;
-        /* Exact physical size: 50mm × 30mm */
+        margin: 0;
+        padding: 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        /* Exact physical size — fills the entire 50×30 mm page */
+        width:  50mm !important;
+        height: 30mm !important;
+        page-break-after: avoid;
+        page-break-inside: avoid;
+        break-after: avoid;
+      }
+      canvas#lbl {
+        display: block;
         width:  50mm !important;
         height: 30mm !important;
       }
-      canvas#lbl { width: 50mm !important; height: 30mm !important; }
     }
   </style>
 </head>
