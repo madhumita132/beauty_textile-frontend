@@ -386,12 +386,14 @@ type Tab = 'dashboard' | 'products' | 'lowstock' | 'adjust' | 'audit' | 'import'
             <span class="st-prod-name">{{ barcodeProduct.name }}</span>
             <span class="st-price">&#8377;{{ barcodeProduct.price | number:'1.0-0' }}</span>
           </div>
-
+          <div class="st-info-row">
+              <span class="st-bc-num">Code : {{ barcodeProduct.barcode }}</span>
+          </div>
           <!-- ③ Barcode image + raw number -->
           <div class="st-bc-wrap">
             <img [src]="inventorySvc.getBarcodeImageUrl(barcodeProduct.barcode, 400, 80)"
                  [alt]="barcodeProduct.barcode" class="st-bc-img" (load)="onBarcodeImageLoad()" />
-            <div class="st-bc-num">{{ barcodeProduct.barcode }}</div>
+           
           </div>
 
         </div>
@@ -878,7 +880,7 @@ type Tab = 'dashboard' | 'products' | 'lowstock' | 'adjust' | 'audit' | 'import'
       gap: 6px;
     }
     .st-prod-name {
-      font-size: 12px;
+      font-size: 16px;
       font-weight: 600;
       color: #333;
       white-space: nowrap;
@@ -902,7 +904,7 @@ type Tab = 'dashboard' | 'products' | 'lowstock' | 'adjust' | 'audit' | 'import'
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
     }
     .st-bc-img {
       display: block;
@@ -912,11 +914,14 @@ type Tab = 'dashboard' | 'products' | 'lowstock' | 'adjust' | 'audit' | 'import'
       object-fit: fill;
     }
     .st-bc-num {
-      font: normal 10px 'Courier New', Courier, monospace;
-      letter-spacing: 1px;
+      font-size: 12px;
+      font-weight: 900;
       text-align: center;
       color: #000;
-      margin-top: 3px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+      flex: 1;
     }
 
     /* Print rules for the barcode sticker live in the global stylesheet (styles.scss)
@@ -1309,7 +1314,8 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  margin-top: -1mm;
 }
 .st-bc-img {
   display: block;
@@ -1318,11 +1324,12 @@ html, body {
   object-fit: fill;
 }
 .st-bc-num {
-  font: normal 2mm "Courier New", Courier, monospace;
+  font: 600 2.4mm Arial, sans-serif;
   letter-spacing: 0.2mm;
   text-align: center;
   color: #000;
-  margin-top: 0.5mm;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 /* On-screen-only reminder shown right when the print dialog is about to open.
    Hidden automatically when actually printing (@media print below). */

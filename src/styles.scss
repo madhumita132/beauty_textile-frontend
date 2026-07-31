@@ -190,11 +190,10 @@ tr:hover td { background: #f8f9fa; }
   }
   /* Barcode number */
   #barcode-print-area .st-bc-num {
-    font: normal 2mm 'Courier New', Courier, monospace !important;
+    font: 600 2.4mm Arial, sans-serif !important;
     letter-spacing: 0.2mm;
     text-align: center;
     color: #000;
-    margin-top: 0.5mm;
   }
   .no-print { display: none !important; }
   .print-only {
