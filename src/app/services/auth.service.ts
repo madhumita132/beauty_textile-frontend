@@ -27,6 +27,41 @@ export class AuthService {
   constructor(private http: HttpClient) {
     // Check if user has an active session on app load
     this.checkSession().subscribe();
+    this.startSilentSessionKeepAlive();
+  }
+
+  /**
+   * Silently resets the server-side session's sliding idle timeout while the user
+   * is actually working, so an active shift never gets logged out mid-task.
+   *
+   * Deliberately NOT a blind setInterval ping: it only fires on real user activity
+   * (click/keydown/mousemove/touchstart/scroll), at most once per PING_MIN_INTERVAL_MS,
+   * and only while the tab is visible and a session is currently logged in. A tab left
+   * open with no interaction still expires after the backend's idle timeout — this is
+   * the intended security boundary, not an infinite session.
+   */
+  private lastKeepAliveAt = 0;
+  private readonly KEEP_ALIVE_MIN_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+  private readonly ACTIVITY_EVENTS = ['click', 'keydown', 'mousemove', 'touchstart', 'scroll'];
+
+  private startSilentSessionKeepAlive(): void {
+    if (typeof window === 'undefined') return;
+    const onActivity = () => this.pingSessionIfDue();
+    this.ACTIVITY_EVENTS.forEach(evt => window.addEventListener(evt, onActivity, { passive: true }));
+  }
+
+  private pingSessionIfDue(): void {
+    if (!this.loggedIn$.value) return;
+    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+    const now = Date.now();
+    if (now - this.lastKeepAliveAt < this.KEEP_ALIVE_MIN_INTERVAL_MS) return;
+    this.lastKeepAliveAt = now;
+    // Fire-and-forget: touching /auth/me resets the session's idle timer. A failure
+    // here means the session already expired server-side; the next real API call
+    // will 401 and the route guards will redirect to login as usual.
+    this.http.get<UserSession>(`${this.apiBase}/auth/me`, { withCredentials: true }).pipe(
+      catchError(() => of(null))
+    ).subscribe();
   }
 
   /** Validate current session with backend **/

@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, AfterVie
 import { FormsModule } from '@angular/forms';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Router } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ProductService } from '../../../services/product.service';
 import { BillingService } from '../../../services/billing.service';
 import { AppSettingsService } from '../../../services/app-settings.service';
@@ -53,9 +55,48 @@ interface BillLine {
           }
         </div>
 
+        <!-- Find & Edit past bill -->
+        <div class="card mt-16" style="padding:20px;">
+          <div class="section-h2-row">
+            <h2 class="section-h2" style="margin-bottom:0;">Find &amp; Edit Past Bill</h2>
+            <button class="btn-link" (click)="showBillSearch = !showBillSearch">{{ showBillSearch ? 'Hide' : 'Show' }}</button>
+          </div>
+          @if (showBillSearch) {
+            <div class="bill-search-row mt-8">
+              <input [(ngModel)]="billSearchName" (keydown.enter)="searchBills()" class="form-control" placeholder="Customer name" />
+              <input [(ngModel)]="billSearchPhone" (keydown.enter)="searchBills()" class="form-control" placeholder="Phone" maxlength="10" />
+              <input [(ngModel)]="billSearchDate" (keydown.enter)="searchBills()" type="date" class="form-control" />
+            </div>
+            <button class="btn btn-outline btn-block mt-8" [disabled]="billSearching" (click)="searchBills()">
+              {{ billSearching ? 'Searching...' : 'Search Bills' }}
+            </button>
+            @if (billSearchResults.length > 0) {
+              <div class="bill-search-results mt-8">
+                @for (b of billSearchResults; track b.id) {
+                  <div class="bill-search-item" (click)="loadBillForEdit(b)">
+                    <div>
+                      <strong>Bill #{{ b.id }}</strong> - {{ b.customerName || 'Walk-in' }}
+                      @if (b.phone) { <span class="text-muted text-sm"> | {{ b.phone }}</span> }
+                      @if (b.status !== 'ACTIVE') { <span class="bill-status-badge">{{ b.status }}</span> }
+                    </div>
+                    <div class="text-muted text-sm">
+                      {{ b.createdAt | date:'dd/MM/yyyy HH:mm' }} - ₹{{ (b.grandTotal || b.finalAmount) | number:'1.0-0' }}
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else if (billSearchAttempted) {
+              <p class="text-muted text-sm mt-8">No bills found.</p>
+            }
+          }
+        </div>
+
         <!-- Bill list -->
         <div class="card mt-16" style="padding:20px;">
-          <h2 class="section-h2">Current Bill</h2>
+          <h2 class="section-h2">
+            Current Bill
+            @if (editingBillId) { <span class="editing-badge">Editing Bill #{{ editingBillId }}</span> }
+          </h2>
           @if (billLines.length === 0) {
             <p class="text-muted text-sm">No items yet. Scan or search above.</p>
           } @else {
@@ -147,7 +188,7 @@ interface BillLine {
           <button class="btn btn-success btn-block mt-16"
             [disabled]="billLines.length === 0 || saving"
             (click)="saveBill()">
-            {{ saving ? 'Saving...' : '💾 Save Bill' }}
+            {{ saving ? 'Saving...' : (editingBillId ? '💾 Update Bill' : '💾 Save Bill') }}
           </button>
           <button class="btn btn-outline btn-block mt-8"
             [disabled]="!savedBill"
@@ -165,7 +206,7 @@ interface BillLine {
             </button>
           }
           <button class="btn btn-warning btn-block mt-8" (click)="clearBill()">
-            🗑️ Clear Bill
+            {{ editingBillId ? '✖️ Cancel Edit' : '🗑️ Clear Bill' }}
           </button>
         </div>
       </div>
@@ -231,6 +272,15 @@ interface BillLine {
     .gst-amt { color: #c0392b; font-weight: 600; }
     .btn-return   { background: #c0392b; color: #fff; }
     .btn-exchange { background: #805500; color: #fff; }
+    .section-h2-row { display: flex; justify-content: space-between; align-items: center; }
+    .btn-link { background: none; color: #805500; font-size: .8rem; font-weight: 600; text-decoration: underline; padding: 0; }
+    .bill-search-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .bill-search-row .form-control { flex: 1; min-width: 100px; }
+    .bill-search-results { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; }
+    .bill-search-item { padding: 10px 12px; border: 1px solid #eee; border-radius: 6px; cursor: pointer; }
+    .bill-search-item:hover { background: #fef9f9; border-color: #805500; }
+    .editing-badge { background: #805500; color: #fff; font-size: .7rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-left: 8px; vertical-align: middle; }
+    .bill-status-badge { background: #e74c3c; color: #fff; font-size: .65rem; font-weight: 600; padding: 1px 6px; border-radius: 8px; margin-left: 6px; }
     /* Print receipt — hidden on screen, shown only when printing (global styles.scss handles @media print) */
     .print-receipt { display: none; }
     .receipt-divider { font-family: 'Courier New', monospace; letter-spacing: .05em; }
@@ -252,6 +302,15 @@ export class BillingComponent implements OnInit, AfterViewInit {
   billDiscountType = 'NONE';
   billDiscountValue = 0;
   gstSettings: AppSettings | null = null;
+
+  editingBillId: number | null = null;
+  showBillSearch = false;
+  billSearchName = '';
+  billSearchPhone = '';
+  billSearchDate = '';
+  billSearchResults: Billing[] = [];
+  billSearching = false;
+  billSearchAttempted = false;
 
   get billTotal(): number {
     return this.billLines.reduce((s, l) => s + (l.product.finalPrice ?? l.product.price) * l.quantity, 0);
@@ -353,9 +412,64 @@ export class BillingComponent implements OnInit, AfterViewInit {
   clearBill(): void {
     this.billLines = [];
     this.savedBill = null;
+    this.editingBillId = null;
     this.billDiscountType = 'NONE';
     this.billDiscountValue = 0;
     this.customer = { name: '', phone: '', paymentMode: 'CASH' };
+  }
+
+  searchBills(): void {
+    const name = this.billSearchName.trim();
+    const phone = this.billSearchPhone.trim();
+    const date = this.billSearchDate.trim();
+    if (!name && !phone && !date) {
+      this.toast.error('Enter a name, phone or date to search');
+      return;
+    }
+    this.billSearching = true;
+    this.billSearchAttempted = false;
+    this.billSvc.search({ name, phone, date }).subscribe({
+      next: bills => {
+        this.billSearchResults = bills;
+        this.billSearching = false;
+        this.billSearchAttempted = true;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.billSearching = false;
+        this.billSearchAttempted = true;
+        this.toast.error('Failed to search bills');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  loadBillForEdit(b: Billing): void {
+    if (b.status === 'RETURNED') {
+      this.toast.error(`Bill #${b.id} is fully returned and cannot be edited.`);
+      return;
+    }
+    if (!b.items || b.items.length === 0) {
+      this.toast.error(`Bill #${b.id} has no items to edit.`);
+      return;
+    }
+    forkJoin(b.items.map(it => this.prodSvc.getById(it.productId).pipe(catchError(() => of(null))))).subscribe(products => {
+      if (products.some(p => !p)) {
+        this.toast.error('One or more products on this bill no longer exist and cannot be edited.');
+        return;
+      }
+      this.billLines = b.items.map((it, idx) => ({ product: products[idx] as Product, quantity: it.quantity }));
+      this.customer = { name: b.customerName || '', phone: b.phone || '', paymentMode: b.paymentMode || 'CASH' };
+      this.billDiscountType = b.discountType || 'NONE';
+      this.billDiscountValue = b.discountValue || 0;
+      this.editingBillId = b.id;
+      this.savedBill = null;
+      this.billSearchResults = [];
+      this.showBillSearch = false;
+      this.toast.success(`Loaded Bill #${b.id} for editing`);
+      this.cdr.markForCheck();
+      this.focusBarcode();
+    });
   }
 
   goToReturn(billId: number): void {
@@ -378,18 +492,25 @@ export class BillingComponent implements OnInit, AfterViewInit {
       discountValue: this.billDiscountType === 'NONE' ? 0 : this.billDiscountValue,
       items: this.billLines.map(l => ({ productId: l.product.id, quantity: l.quantity }))
     };
-    this.billSvc.create(req).subscribe({
+
+    const editingId = this.editingBillId;
+    const request$ = editingId ? this.billSvc.update(editingId, req) : this.billSvc.create(req);
+
+    request$.subscribe({
       next: bill => {
         this.savedBill = bill;
         this.saving = false;
+        this.editingBillId = null;
         this.cdr.markForCheck();
-        this.toast.success(`Bill #${bill.id} saved to database ✓ Click Print Receipt to print.`);
+        this.toast.success(editingId
+          ? `Bill #${bill.id} updated ✓ Click Print Receipt to print.`
+          : `Bill #${bill.id} saved to database ✓ Click Print Receipt to print.`);
         this.billLines = [];
       },
       error: err => {
         this.saving = false;
         this.cdr.markForCheck();
-        this.toast.error(err.error?.message || 'Failed to save bill');
+        this.toast.error(err.error?.message || (editingId ? 'Failed to update bill' : 'Failed to save bill'));
       }
     });
   }

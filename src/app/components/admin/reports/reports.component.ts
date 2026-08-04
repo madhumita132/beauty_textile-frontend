@@ -1,26 +1,81 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { ReportService } from '../../../services/report.service';
-import { MonthlyReport, ProductSales, CategorySales } from '../../../models/models';
+import { BillingService } from '../../../services/billing.service';
+import { MonthlyReport, ProductSales, CategorySales, Billing } from '../../../models/models';
 import { ToastService } from '../../../services/toast.service';
 
-type Tab = 'monthly' | 'product' | 'category';
+type Tab = 'daily' | 'monthly' | 'product' | 'category';
 
 @Component({
   selector: 'app-reports',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DecimalPipe],
+  imports: [FormsModule, DecimalPipe, DatePipe],
   template: `
     <h1 class="admin-page-title">Sales Reports</h1>
 
     <!-- Tabs -->
     <div class="tabs">
+      <button [class.active]="tab==='daily'"    (click)="tab='daily'">Daily</button>
       <button [class.active]="tab==='monthly'" (click)="tab='monthly'">Monthly</button>
       <button [class.active]="tab==='product'"  (click)="tab='product'">Product-wise</button>
       <button [class.active]="tab==='category'" (click)="tab='category'">Category-wise</button>
     </div>
+
+    <!-- Daily billing details -->
+    @if (tab === 'daily') {
+      <div class="report-filters">
+        <label class="form-label" style="margin:0">Date</label>
+        <input [(ngModel)]="dailyDate" type="date" class="form-control" style="width:170px" (keydown.enter)="loadDaily()" />
+        <button class="btn btn-primary btn-sm" (click)="loadDaily()">Load</button>
+      </div>
+      @if (dailyLoading) { <div class="spinner"></div> }
+      @else if (dailyBills.length > 0) {
+        <div class="kpi-row">
+          <div class="kpi-small"><div class="kpi-label">Bills</div><div class="kpi-value">{{ dailyBills.length }}</div></div>
+          <div class="kpi-small"><div class="kpi-label">Revenue</div><div class="kpi-value">₹{{ dailyTotalRevenue | number:'1.0-0' }}</div></div>
+          <div class="kpi-small"><div class="kpi-label">Items Sold</div><div class="kpi-value">{{ dailyTotalItems }}</div></div>
+        </div>
+        <div class="card mt-16" style="padding:12px 20px">
+          @for (b of dailyBills; track b.id) {
+            <div class="daily-bill">
+              <div class="daily-bill-head" (click)="toggleBillExpand(b.id)">
+                <div>
+                  <strong>Bill #{{ b.id }}</strong> - {{ b.customerName || 'Walk-in' }}
+                  @if (b.phone) { <span class="text-muted text-sm"> | {{ b.phone }}</span> }
+                  @if (b.status !== 'ACTIVE') { <span class="bill-status-badge">{{ b.status }}</span> }
+                </div>
+                <div class="daily-bill-meta">
+                  <span class="text-muted text-sm">{{ b.createdAt | date:'HH:mm' }}</span>
+                  <span class="daily-bill-amt">₹{{ (b.grandTotal || b.finalAmount) | number:'1.0-0' }}</span>
+                  <span class="expand-caret">{{ expandedBillId === b.id ? '▲' : '▼' }}</span>
+                </div>
+              </div>
+              @if (expandedBillId === b.id) {
+                <table class="daily-bill-items">
+                  <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+                  <tbody>
+                    @for (it of b.items; track it.productId) {
+                      <tr><td>{{ it.productName }}</td><td>{{ it.quantity }}</td><td>₹{{ it.price }}</td><td>₹{{ (it.price * it.quantity) | number:'1.0-0' }}</td></tr>
+                    }
+                  </tbody>
+                </table>
+                <div class="daily-bill-summary">
+                  <span>Subtotal: ₹{{ b.totalAmount | number:'1.0-0' }}</span>
+                  @if ((b.discountAmount || 0) > 0) { <span>Discount: -₹{{ b.discountAmount | number:'1.0-0' }}</span> }
+                  @if ((b.gstAmount || 0) > 0) { <span>GST: ₹{{ b.gstAmount | number:'1.0-0' }}</span> }
+                  <span><strong>Total: ₹{{ (b.grandTotal || b.finalAmount) | number:'1.0-0' }}</strong></span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      } @else if (dailyAttempted) {
+        <p class="text-muted text-sm">No bills found for this date.</p>
+      }
+    }
 
     <!-- Monthly -->
     @if (tab === 'monthly') {
@@ -207,10 +262,19 @@ type Tab = 'monthly' | 'product' | 'category';
     .print-report-section { margin-top: 12px; }
     .print-report-heading { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
     .print-report-row { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; padding: 4px 0; border-bottom: 1px solid #eee; }
+    .daily-bill { border-bottom: 1px solid #f0f0f0; padding: 10px 0; }
+    .daily-bill:last-child { border-bottom: none; }
+    .daily-bill-head { display: flex; justify-content: space-between; align-items: center; cursor: pointer; gap: 10px; flex-wrap: wrap; }
+    .daily-bill-meta { display: flex; align-items: center; gap: 10px; }
+    .daily-bill-amt { font-weight: 700; color: #c0392b; }
+    .expand-caret { color: #7f8c8d; font-size: .75rem; }
+    .daily-bill-items { width: 100%; margin-top: 8px; font-size: .85rem; }
+    .daily-bill-summary { display: flex; gap: 16px; flex-wrap: wrap; font-size: .82rem; margin-top: 6px; color: #555; }
+    .bill-status-badge { background: #e74c3c; color: #fff; font-size: .65rem; font-weight: 600; padding: 1px 6px; border-radius: 8px; margin-left: 6px; }
   `]
 })
 export class ReportsComponent implements OnInit {
-  tab: Tab = 'monthly';
+  tab: Tab = 'daily';
   month = new Date().toISOString().slice(0, 7);
   fromDate = new Date().toISOString().slice(0, 8) + '01';
   toDate = new Date().toISOString().slice(0, 10);
@@ -219,9 +283,52 @@ export class ReportsComponent implements OnInit {
   productData: ProductSales[] = [];
   categoryData: CategorySales[] = [];
 
-  constructor(private reportSvc: ReportService, private toast: ToastService, private cdr: ChangeDetectorRef) {}
+  dailyDate = new Date().toISOString().slice(0, 10);
+  dailyBills: Billing[] = [];
+  dailyLoading = false;
+  dailyAttempted = false;
+  expandedBillId: number | null = null;
 
-  ngOnInit(): void { this.loadMonthly(); }
+  constructor(
+    private reportSvc: ReportService,
+    private billingSvc: BillingService,
+    private toast: ToastService,
+    private cdr: ChangeDetectorRef
+  ) {}
+
+  ngOnInit(): void { this.loadDaily(); }
+
+  loadDaily(): void {
+    this.dailyLoading = true;
+    this.dailyAttempted = false;
+    this.expandedBillId = null;
+    this.billingSvc.search({ date: this.dailyDate }).subscribe({
+      next: bills => {
+        this.dailyBills = bills;
+        this.dailyLoading = false;
+        this.dailyAttempted = true;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.dailyLoading = false;
+        this.dailyAttempted = true;
+        this.toast.error('Failed to load daily billing details');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  toggleBillExpand(id: number): void {
+    this.expandedBillId = this.expandedBillId === id ? null : id;
+  }
+
+  get dailyTotalRevenue(): number {
+    return this.dailyBills.reduce((s, b) => s + (b.grandTotal || b.finalAmount || b.totalAmount || 0), 0);
+  }
+
+  get dailyTotalItems(): number {
+    return this.dailyBills.reduce((s, b) => s + (b.items || []).reduce((si, it) => si + it.quantity, 0), 0);
+  }
 
   loadMonthly(): void {
     this.loadingReport = true;
